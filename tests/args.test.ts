@@ -1,0 +1,109 @@
+import { describe, it, expect, vi, afterEach } from 'vitest';
+import { parseArgs } from '../src/cli/args.js';
+
+describe('parseArgs', () => {
+  afterEach(() => {
+    vi.restoreAllMocks();
+  });
+
+  it('parses capture command with --from cmd', () => {
+    const args = parseArgs(['node', 'snapdiff', 'capture', '--name', 'test', '--from', 'cmd', '--cmd', 'echo hello']);
+    expect(args.command).toBe('capture');
+    expect(args.name).toBe('test');
+    expect(args.from).toBe('cmd');
+    expect(args.cmd).toBe('echo hello');
+  });
+
+  it('parses capture command with --from file', () => {
+    const args = parseArgs(['node', 'snapdiff', 'capture', '--name', 'test', '--from', 'file', '--file', 'path/to/file.txt']);
+    expect(args.command).toBe('capture');
+    expect(args.from).toBe('file');
+    expect(args.file).toBe('path/to/file.txt');
+  });
+
+  it('parses verify command with --name', () => {
+    const args = parseArgs(['node', 'snapdiff', 'verify', '--name', 'test']);
+    expect(args.command).toBe('verify');
+    expect(args.name).toBe('test');
+  });
+
+  it('parses verify command with --all', () => {
+    const args = parseArgs(['node', 'snapdiff', 'verify', '--all']);
+    expect(args.command).toBe('verify');
+    expect(args.all).toBe(true);
+  });
+
+  it('parses diff command', () => {
+    const args = parseArgs(['node', 'snapdiff', 'diff', '--name', 'test']);
+    expect(args.command).toBe('diff');
+    expect(args.name).toBe('test');
+  });
+
+  it('parses list command', () => {
+    const args = parseArgs(['node', 'snapdiff', 'list']);
+    expect(args.command).toBe('list');
+  });
+
+  it('parses update command', () => {
+    const args = parseArgs(['node', 'snapdiff', 'update', '--name', 'test']);
+    expect(args.command).toBe('update');
+    expect(args.name).toBe('test');
+  });
+
+  it('parses prune command', () => {
+    const args = parseArgs(['node', 'snapdiff', 'prune']);
+    expect(args.command).toBe('prune');
+  });
+
+  it('parses --mode option', () => {
+    const args = parseArgs(['node', 'snapdiff', 'capture', '--name', 'test', '--from', 'file', '--file', 'f.txt', '--mode', 'normalize']);
+    expect(args.mode).toBe('normalize');
+  });
+
+  it('parses --no-color option', () => {
+    const args = parseArgs(['node', 'snapdiff', 'verify', '--name', 'test', '--no-color']);
+    expect(args.color).toBe(false);
+  });
+
+  it('parses --base-dir option', () => {
+    const args = parseArgs(['node', 'snapdiff', 'list', '--base-dir', '/tmp']);
+    expect(args.baseDir).toBe('/tmp');
+  });
+
+  it('defaults to exact mode when --mode not specified', () => {
+    const args = parseArgs(['node', 'snapdiff', 'verify', '--name', 'test']);
+    expect(args.mode).toBeUndefined();
+  });
+
+  it('exits with code 2 on unknown command', () => {
+    const exitSpy = vi.spyOn(process, 'exit').mockImplementation((() => {
+      throw new Error('process.exit called');
+    }) as (code?: number) => never);
+    expect(() => parseArgs(['node', 'snapdiff', 'foobar'])).toThrow('process.exit called');
+    expect(exitSpy).toHaveBeenCalledWith(2);
+  });
+
+  it('shows help on --help', () => {
+    const exitSpy = vi.spyOn(process, 'exit').mockImplementation((() => {
+      throw new Error('process.exit called');
+    }) as (code?: number) => never);
+    expect(() => parseArgs(['node', 'snapdiff', '--help'])).toThrow('process.exit called');
+    expect(exitSpy).toHaveBeenCalledWith(0);
+  });
+
+  it('exits with code 2 on missing required args for capture', () => {
+    const exitSpy = vi.spyOn(process, 'exit').mockImplementation((() => {
+      throw new Error('process.exit called');
+    }) as (code?: number) => never);
+    expect(() => parseArgs(['node', 'snapdiff', 'capture'])).toThrow('process.exit called');
+    expect(exitSpy).toHaveBeenCalledWith(2);
+  });
+
+  it('exits with code 2 on verify without --name or --all', () => {
+    const exitSpy = vi.spyOn(process, 'exit').mockImplementation((() => {
+      throw new Error('process.exit called');
+    }) as (code?: number) => never);
+    expect(() => parseArgs(['node', 'snapdiff', 'verify'])).toThrow('process.exit called');
+    expect(exitSpy).toHaveBeenCalledWith(2);
+  });
+});
