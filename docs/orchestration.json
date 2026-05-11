@@ -1,0 +1,126 @@
+{
+  "name": "snapdiff-build",
+  "version": "1.0.0",
+  "tasks": [
+    {
+      "id": "1-pkg-scaffold",
+      "depends_on": [],
+      "action": "update package.json with proper metadata, scripts, dependencies",
+      "files": ["package.json"]
+    },
+    {
+      "id": "2-tsconfig",
+      "depends_on": ["1-pkg-scaffold"],
+      "action": "create tsconfig.json for TypeScript compilation",
+      "files": ["tsconfig.json"]
+    },
+    {
+      "id": "3-eslint",
+      "depends_on": ["2-tsconfig"],
+      "action": "create eslint config for TypeScript",
+      "files": ["eslint.config.mjs"]
+    },
+    {
+      "id": "4-core-snapshot",
+      "depends_on": ["2-tsconfig"],
+      "action": "implement snapshot storage engine",
+      "files": ["src/core/snapshot.ts"]
+    },
+    {
+      "id": "5-core-compare",
+      "depends_on": ["2-tsconfig"],
+      "action": "implement comparison modes (exact, normalize, json-equiv)",
+      "files": ["src/core/compare.ts"]
+    },
+    {
+      "id": "6-core-diff",
+      "depends_on": ["2-tsconfig"],
+      "action": "implement diff output formatter",
+      "files": ["src/core/diff.ts"]
+    },
+    {
+      "id": "7-cli-args",
+      "depends_on": ["2-tsconfig"],
+      "action": "implement CLI argument parser",
+      "files": ["src/cli/args.ts"]
+    },
+    {
+      "id": "8-cmd-capture",
+      "depends_on": ["4-core-snapshot", "7-cli-args"],
+      "action": "implement capture command",
+      "files": ["src/commands/capture.ts"]
+    },
+    {
+      "id": "9-cmd-verify",
+      "depends_on": ["4-core-snapshot", "5-core-compare", "7-cli-args"],
+      "action": "implement verify command",
+      "files": ["src/commands/verify.ts"]
+    },
+    {
+      "id": "10-cmd-diff",
+      "depends_on": ["4-core-snapshot", "5-core-compare", "6-core-diff", "7-cli-args"],
+      "action": "implement diff command",
+      "files": ["src/commands/diff.ts"]
+    },
+    {
+      "id": "11-cmd-list",
+      "depends_on": ["4-core-snapshot", "7-cli-args"],
+      "action": "implement list command",
+      "files": ["src/commands/list.ts"]
+    },
+    {
+      "id": "12-cmd-update",
+      "depends_on": ["4-core-snapshot", "7-cli-args"],
+      "action": "implement update command",
+      "files": ["src/commands/update.ts"]
+    },
+    {
+      "id": "13-cmd-prune",
+      "depends_on": ["4-core-snapshot", "7-cli-args"],
+      "action": "implement prune command",
+      "files": ["src/commands/prune.ts"]
+    },
+    {
+      "id": "14-cli-entry",
+      "depends_on": ["7-cli-args", "8-cmd-capture", "9-cmd-verify", "10-cmd-diff", "11-cmd-list", "12-cmd-update", "13-cmd-prune"],
+      "action": "wire CLI entry point",
+      "files": ["src/index.ts"]
+    },
+    {
+      "id": "15-examples",
+      "depends_on": [],
+      "action": "create example fixtures",
+      "files": ["examples/fixture.json", "examples/fixture.txt", "examples/fixture.md"]
+    },
+    {
+      "id": "16-tests",
+      "depends_on": ["4-core-snapshot", "5-core-compare", "6-core-diff", "7-cli-args"],
+      "action": "write unit tests",
+      "files": ["tests/compare.test.ts", "tests/snapshot.test.ts", "tests/args.test.ts", "tests/diff.test.ts"]
+    },
+    {
+      "id": "17-smoke-script",
+      "depends_on": ["14-cli-entry", "15-examples"],
+      "action": "create smoke test script",
+      "files": ["scripts/smoke.sh"]
+    },
+    {
+      "id": "18-readme",
+      "depends_on": ["14-cli-entry"],
+      "action": "write README with personality",
+      "files": ["README.md"]
+    },
+    {
+      "id": "19-verify",
+      "depends_on": ["14-cli-entry", "15-examples", "16-tests", "17-smoke-script", "18-readme"],
+      "action": "run full verification suite",
+      "files": []
+    },
+    {
+      "id": "20-commit-push",
+      "depends_on": ["19-verify"],
+      "action": "atomic commits and push to main",
+      "files": []
+    }
+  ]
+}
