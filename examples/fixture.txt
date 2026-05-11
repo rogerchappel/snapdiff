@@ -1,0 +1,8 @@
+Hello, snapdiff!
+
+This is a sample text fixture used for snapshot testing.
+It contains multiple lines with trailing spaces.
+   
+Whitespace handling is key for the normalize mode.
+The quick brown fox jumps over the lazy dog.
+

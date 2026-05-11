@@ -1,0 +1,11 @@
+{
+  "name": "snapdiff-test",
+  "version": "0.1.0",
+  "description": "A test fixture for snapdiff JSON comparison",
+  "features": ["exact", "normalize", "json-equiv"],
+  "settings": {
+    "color": true,
+    "timeout": 30000
+  },
+  "tags": ["cli", "snapshot", "testing"]
+}
