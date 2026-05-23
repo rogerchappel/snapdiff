@@ -10,7 +10,8 @@
   "files": [
     "dist",
     "README.md",
-    "LICENSE"
+    "LICENSE",
+    "SECURITY.md"
   ],
   "scripts": {
     "build": "tsc",
@@ -18,7 +19,9 @@
     "dev": "tsc --watch",
     "smoke": "bash scripts/smoke.sh",
     "start": "node dist/index.js",
-    "test": "vitest run"
+    "test": "vitest run",
+    "package:smoke": "npm pack --dry-run",
+    "release:check": "npm run check && npm test && npm run smoke && npm run package:smoke"
   },
   "keywords": [
     "snapshot",
