@@ -21,7 +21,7 @@
     "start": "node dist/index.js",
     "test": "vitest run",
     "package:smoke": "npm pack --dry-run",
-    "release:check": "npm run check && npm test && npm run smoke && npm run package:smoke"
+    "release:check": "npm run check && npm test && npm run build && npm run smoke && npm run package:smoke"
   },
   "keywords": [
     "snapshot",
