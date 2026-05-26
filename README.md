@@ -167,3 +167,22 @@ npm run smoke   # Run CLI smoke tests
 ## License
 
 MIT. Do what you want.
+
+## Security
+
+SnapDiff stores snapshots on disk as plain text or JSON files. It does not:
+
+- Transmit data over the network
+- Phone home or collect telemetry
+- Execute arbitrary commands from snapshot files
+
+Snapshots are plain files you own. Store them in your repo or scratch space; they contain exactly what your CLI output.
+
+## Limitations
+
+- Snapshots are stored as flat files — no compression or deduplication
+- JSON snapshots preserve key order but not formatting differences (whitespace, indentation)
+- Binary output is not supported — text and JSON only
+- Large outputs (>10 MB) may slow diff comparison
+- No support for regex-based ignore rules in snapshot matching (exact string comparison only)
+- Works best with deterministic output; tools that emit timestamps or random IDs will cause snapshot mismatches unless the output is pre-processed
