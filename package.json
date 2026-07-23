@@ -22,8 +22,9 @@
     "smoke": "bash scripts/smoke.sh",
     "start": "node dist/index.js",
     "test": "vitest run",
+    "audit": "npm audit --audit-level=low",
     "package:smoke": "npm pack --dry-run",
-    "release:check": "npm run check && npm test && npm run build && npm run smoke && npm run package:smoke"
+    "release:check": "npm run check && npm test && npm run build && npm run smoke && npm run audit && npm run package:smoke"
   },
   "keywords": [
     "snapshot",
