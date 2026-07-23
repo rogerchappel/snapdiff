@@ -39,6 +39,25 @@ describe('saveSnapshot', () => {
     expect(meta.sourceFile).toBe('examples/fixture.txt');
     expect(meta.mode).toBe('normalize');
   });
+
+  it.each(['../escaped', '../../escaped', '/tmp/escaped', String.raw`..\escaped`, '.', '..', 'nested/name'])(
+    'rejects unsafe snapshot name %j',
+    async (name) => {
+      await expect(saveSnapshot(name, 'unsafe', 'exact', TEST_DIR)).rejects.toThrow('Invalid snapshot name');
+    }
+  );
+});
+
+describe('snapshot path safety', () => {
+  it('rejects traversal before reading or deleting files outside snapshots', async () => {
+    const outsidePath = join(TEST_DIR, 'escaped.snap');
+    await fs.writeFile(outsidePath, 'sentinel', 'utf-8');
+
+    await expect(loadSnapshot('../escaped', TEST_DIR)).rejects.toThrow('Invalid snapshot name');
+    await expect(snapshotExists('../escaped', TEST_DIR)).rejects.toThrow('Invalid snapshot name');
+    await expect(deleteSnapshot('../escaped', TEST_DIR)).rejects.toThrow('Invalid snapshot name');
+    expect(await fs.readFile(outsidePath, 'utf-8')).toBe('sentinel');
+  });
 });
 
 describe('loadSnapshot', () => {

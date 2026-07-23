@@ -145,6 +145,36 @@ else
   fail "--no-color works"
 fi
 
+# Test 14: unsafe names cannot escape the snapshots directory
+echo ""
+echo "--- Test 14: reject unsafe snapshot names ---"
+printf 'sentinel\n' > "$TEST_DIR/escaped.snap"
+unsafe_name='../escaped'
+unsafe_commands=(capture verify diff update)
+unsafe_rejected=true
+
+for command in "${unsafe_commands[@]}"; do
+  if [ "$command" = capture ]; then
+    if $SNAPDIFF "$command" --name "$unsafe_name" --from file --file examples/fixture.txt --base-dir "$TEST_DIR" >/dev/null 2>&1; then
+      unsafe_rejected=false
+    fi
+  elif $SNAPDIFF "$command" --name "$unsafe_name" --base-dir "$TEST_DIR" >/dev/null 2>&1; then
+    unsafe_rejected=false
+  fi
+done
+
+mkdir -p "$TEST_DIR/snapshots"
+printf 'orphan\n' > "$TEST_DIR/snapshots/...snap"
+$SNAPDIFF prune --base-dir "$TEST_DIR" >/dev/null 2>&1 || true
+
+if [ "$unsafe_rejected" = true ] \
+  && [ "$(cat "$TEST_DIR/escaped.snap")" = sentinel ] \
+  && [ -f "$TEST_DIR/snapshots/...snap" ]; then
+  pass "unsafe names cannot read, write, or delete outside snapshots"
+else
+  fail "unsafe snapshot name protection"
+fi
+
 echo ""
 echo "=== Results ==="
 echo "  Passed: $PASS"
