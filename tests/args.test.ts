@@ -106,4 +106,17 @@ describe('parseArgs', () => {
     expect(() => parseArgs(['node', 'snapdiff', 'verify'])).toThrow('process.exit called');
     expect(exitSpy).toHaveBeenCalledWith(2);
   });
+
+  it.each(['capture', 'verify', 'diff', 'update'])('rejects unsafe snapshot names for %s', (command) => {
+    const exitSpy = vi.spyOn(process, 'exit').mockImplementation((() => {
+      throw new Error('process.exit called');
+    }) as (code?: number) => never);
+    const commandArgs = command === 'capture'
+      ? ['--from', 'file', '--file', 'fixture.txt']
+      : [];
+
+    expect(() => parseArgs(['node', 'snapdiff', command, '--name', '../escaped', ...commandArgs]))
+      .toThrow('process.exit called');
+    expect(exitSpy).toHaveBeenCalledWith(2);
+  });
 });
