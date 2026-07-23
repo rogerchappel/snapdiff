@@ -10,6 +10,12 @@ format and uses semantic versioning when versioned releases are published.
 ### Added
 
 - Initial project setup.
+- Dependency vulnerability auditing in release validation.
+
+### Security
+
+- Reject snapshot names containing paths or traversal components before snapshot files are accessed.
+- Update the test toolchain to patched dependency versions.
 
 ## Release Links
 
