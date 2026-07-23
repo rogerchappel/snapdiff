@@ -3,6 +3,8 @@
  * Supports: capture, verify, diff, list, update, prune
  */
 
+import { assertValidSnapshotName } from '../core/snapshot.js';
+
 export interface CliArgs {
   command: string;
   name?: string;
@@ -79,6 +81,15 @@ export function parseArgs(argv: string[]): CliArgs {
 }
 
 function validateArgs(args: CliArgs): void {
+  if (args.name) {
+    try {
+      assertValidSnapshotName(args.name);
+    } catch (error) {
+      console.error(error instanceof Error ? error.message : String(error));
+      process.exit(2);
+    }
+  }
+
   switch (args.command) {
     case 'capture':
       if (!args.name) {
@@ -143,7 +154,7 @@ COMMANDS:
   prune    Remove unused snapshot files
 
 OPTIONS:
-  --name <name>      Snapshot name identifier
+  --name <name>      Snapshot name (letters, numbers, dots, underscores, hyphens)
   --from <cmd|file>  Capture source: command or file
   --cmd <command>    Command to execute (with --from cmd)
   --file <path>      File to read (with --from file)
