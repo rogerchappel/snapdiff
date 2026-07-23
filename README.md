@@ -64,7 +64,7 @@ snapdiff capture --from file --file path/to/file.txt --name file-snap --mode nor
 ```
 
 Options:
-- `--name` — Snapshot identifier (required)
+- `--name` — Snapshot identifier (required). Names must start with a letter or number and may contain only letters, numbers, dots, underscores, and hyphens; paths and traversal components are rejected.
 - `--from` — Source type: `cmd` or `file` (required)
 - `--cmd` — Command to execute (with `--from cmd`)
 - `--file` — File path to read (with `--from file`)
@@ -126,6 +126,8 @@ Snapshots live in a `snapshots/` directory at your project root (or wherever `--
 - `snapshots/<name>.meta.json` — Metadata: capture timestamp, comparison mode, source command/file, content hash
 
 The format is intentionally simple — no binary blobs, no opaque archives. You can read, edit, and version-control these files directly.
+
+Snapshot names are identifiers, not paths. For example, `api-response.v2` is valid, while `../api-response`, `nested/api-response`, and absolute paths are rejected.
 
 ## CI Integration
 
