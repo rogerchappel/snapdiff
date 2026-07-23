@@ -19,16 +19,27 @@ export interface SnapshotInfo {
 }
 
 const SNAPSHOTS_DIR = 'snapshots';
+const SNAPSHOT_NAME_PATTERN = /^[A-Za-z0-9][A-Za-z0-9._-]*$/;
+
+export function assertValidSnapshotName(name: string): void {
+  if (!SNAPSHOT_NAME_PATTERN.test(name)) {
+    throw new Error(
+      'Invalid snapshot name: use only letters, numbers, dots, underscores, and hyphens, starting with a letter or number'
+    );
+  }
+}
 
 function getSnapshotDir(baseDir: string = '.'): string {
   return join(baseDir, SNAPSHOTS_DIR);
 }
 
 function getSnapPath(baseDir: string, name: string): string {
+  assertValidSnapshotName(name);
   return join(getSnapshotDir(baseDir), `${name}.snap`);
 }
 
 function getMetaPath(baseDir: string, name: string): string {
+  assertValidSnapshotName(name);
   return join(getSnapshotDir(baseDir), `${name}.meta.json`);
 }
 
