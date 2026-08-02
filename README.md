@@ -14,9 +14,15 @@ SnapDiff is the standalone alternative. Capture output. Compare later. Exit non-
 
 ## Quick Start
 
+`@rogerchappel/snapdiff` is not published to npm yet. Until the first release,
+install a tarball built from a checkout:
+
 ```bash
-# Install
-npm install -g @rogerchappel/snapdiff
+git clone https://github.com/rogerchappel/snapdiff.git
+cd snapdiff
+npm ci
+package_tarball="$(npm pack --silent)"
+npm install -g "./$package_tarball"
 
 # Capture a snapshot from command output
 snapdiff capture --from cmd --cmd "mytool --input fixture.json" --name mytool-output
@@ -40,6 +46,12 @@ snapdiff prune
 The npm package is `@rogerchappel/snapdiff`; the installed command remains
 `snapdiff`. The unscoped `snapdiff` package on npm is an unrelated project, so
 existing install scripts should migrate to the scoped package name.
+
+After the first npm release, the registry installation command will be:
+
+```bash
+npm install -g @rogerchappel/snapdiff
+```
 
 ## Comparison Modes
 
@@ -138,7 +150,7 @@ Snapshot names are identifiers, not paths. For example, `api-response.v2` is val
 SnapDiff exits with code `1` on mismatch, making it trivial to integrate into CI pipelines:
 
 ```yaml
-# GitHub Actions example
+# GitHub Actions example (after the first npm release)
 - run: npm install -g @rogerchappel/snapdiff
 - run: snapdiff capture --from cmd --cmd "./build/mytool" --name tool-output
 - run: snapdiff verify --name tool-output
