@@ -52,7 +52,7 @@ SnapDiff is a standalone CLI for deterministic output snapshot testing. Capture 
 
 Snapshots are two plain files: the raw output and a JSON metadata file. You can read them, edit them, commit them, diff them. No binary blobs.
 
-npm install -g snapdiff
+npm install -g @rogerchappel/snapdiff
 
 https://github.com/rogerchappel/snapdiff
 ```
