@@ -1,5 +1,5 @@
 {
-  "name": "snapdiff",
+  "name": "@rogerchappel/snapdiff",
   "version": "0.1.0",
   "description": "Deterministic output snapshot testing CLI. Capture, diff, and verify text/JSON/CLI outputs with zero framework overhead.",
   "type": "module",
@@ -36,6 +36,9 @@
   ],
   "author": "Roger Chappel",
   "license": "MIT",
+  "publishConfig": {
+    "access": "public"
+  },
   "repository": {
     "type": "git",
     "url": "git+https://github.com/rogerchappel/snapdiff.git"
