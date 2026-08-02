@@ -10,7 +10,7 @@
 
 ## Demo flow (screen recording)
 
-1. `npm install -g snapdiff` — one dependency
+1. `npm install -g @rogerchappel/snapdiff` — one dependency
 2. `snapdiff capture --from cmd --cmd "mytool --format fancy" --name my-output`
 3. Show `snapshots/my-output.snap` and `snapshots/my-output.meta.json` — plain files
 4. Change mytool output, run `snapdiff verify --name my-output` — shows mismatch, exits 1
@@ -32,7 +32,7 @@
 - `snapshots/` — snapshot storage (after capture)
 
 ## Call to action
-- "npm install -g snapdiff"
+- "npm install -g @rogerchappel/snapdiff"
 - https://github.com/rogerchappel/snapdiff
 - PRs welcome — especially new comparison modes
 
