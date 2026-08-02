@@ -18,13 +18,14 @@
   "scripts": {
     "build": "tsc",
     "check": "eslint src tests",
+    "docs:check": "node scripts/check-package-docs.mjs",
     "dev": "tsc --watch",
     "smoke": "bash scripts/smoke.sh",
     "start": "node dist/index.js",
     "test": "vitest run",
     "audit": "npm audit --audit-level=low",
     "package:smoke": "bash scripts/package-smoke.sh",
-    "release:check": "npm run check && npm test && npm run build && npm run smoke && npm run audit && npm run package:smoke"
+    "release:check": "npm run check && npm run docs:check && npm test && npm run build && npm run smoke && npm run audit && npm run package:smoke"
   },
   "keywords": [
     "snapshot",
