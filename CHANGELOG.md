@@ -11,6 +11,12 @@ format and uses semantic versioning when versioned releases are published.
 
 - Initial project setup.
 - Dependency vulnerability auditing in release validation.
+- Packed-package validation for the published identity and installed CLI.
+
+### Changed
+
+- Publish as `@rogerchappel/snapdiff` while retaining `snapdiff` as the CLI
+  command. The unscoped npm package belongs to an unrelated project.
 
 ### Security
 

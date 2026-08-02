@@ -16,7 +16,7 @@ SnapDiff is the standalone alternative. Capture output. Compare later. Exit non-
 
 ```bash
 # Install
-npm install -g snapdiff
+npm install -g @rogerchappel/snapdiff
 
 # Capture a snapshot from command output
 snapdiff capture --from cmd --cmd "mytool --input fixture.json" --name mytool-output
@@ -36,6 +36,10 @@ snapdiff list
 # Remove orphaned snapshot files
 snapdiff prune
 ```
+
+The npm package is `@rogerchappel/snapdiff`; the installed command remains
+`snapdiff`. The unscoped `snapdiff` package on npm is an unrelated project, so
+existing install scripts should migrate to the scoped package name.
 
 ## Comparison Modes
 
@@ -135,7 +139,7 @@ SnapDiff exits with code `1` on mismatch, making it trivial to integrate into CI
 
 ```yaml
 # GitHub Actions example
-- run: npm install -g snapdiff
+- run: npm install -g @rogerchappel/snapdiff
 - run: snapdiff capture --from cmd --cmd "./build/mytool" --name tool-output
 - run: snapdiff verify --name tool-output
 ```
