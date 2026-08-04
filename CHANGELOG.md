@@ -22,6 +22,8 @@ format and uses semantic versioning when versioned releases are published.
 
 - Reject snapshot names containing paths or traversal components before snapshot files are accessed.
 - Update the test toolchain to patched dependency versions.
+- Update the `brace-expansion` override to 5.0.9 to address
+  GHSA-rgw5-rvv9-x895 in the development toolchain.
 
 ## Release Links
 
