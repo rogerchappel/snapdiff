@@ -39,6 +39,11 @@ jobs:
         run: node /tmp/releasebox/bin/releasebox.js check .
       - name: Run release checks
         run: npm run release:check
+      - name: Pack and validate release artifact
+        run: |
+          package_tarball="$(npm pack --silent)"
+          package_version="$(node -p "require('./package.json').version")"
+          node scripts/validate-release-artifact.mjs "v${package_version}" "$package_tarball"
       - name: Release notes preview
         run: |
           node /tmp/releasebox/bin/releasebox.js notes . > release-notes-preview.md
