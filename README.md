@@ -100,7 +100,10 @@ Options:
 - `--all` — Verify all snapshots
 - `--no-color` — Disable colored output
 
-Exit codes: `0` = pass, `1` = mismatch, `2` = usage error
+Exit codes: `0` = pass, `1` = mismatch or a failed producer command during
+`--all`, `2` = usage/input error or a failed producer command during a
+single-snapshot operation. `verify --all` reports a command failure for that
+snapshot and continues checking the rest.
 
 ### `snapdiff diff`
 
@@ -125,6 +128,12 @@ Accept current output as the new baseline.
 ```bash
 snapdiff update --name mytool-output
 ```
+
+Command-backed `capture`, `diff`, `verify`, and `update` operations require the
+recorded command to exit successfully. Output from a non-zero command is never
+treated as a match or accepted as a baseline. In particular, failed `capture`
+and `update` operations do not create or overwrite snapshot files, and their
+diagnostics include the exit code and command stderr when available.
 
 ### `snapdiff prune`
 
