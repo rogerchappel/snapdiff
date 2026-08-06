@@ -169,12 +169,13 @@ export async function captureFromCommand(
     const { stdout } = await execAsync(cmd, { cwd, maxBuffer: 50 * 1024 * 1024 });
     return stdout;
   } catch (err) {
-    // Include stdout even on non-zero exit
-    if (err && typeof err === 'object' && 'stdout' in err) {
-      return (err as { stdout: string }).stdout;
-    }
-    const msg = err instanceof Error ? err.message : String(err);
-    throw new Error(`Command failed: ${cmd}\n${msg}`);
+    const details = err && typeof err === 'object'
+      ? err as { code?: string | number; stderr?: string; message?: string }
+      : undefined;
+    const exitContext = details?.code !== undefined ? ` (exit code ${details.code})` : '';
+    const stderr = details?.stderr?.trim();
+    const reason = stderr || details?.message || String(err);
+    throw new Error(`Command failed${exitContext}: ${cmd}\n${reason}`);
   }
 }
 

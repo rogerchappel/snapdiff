@@ -61,12 +61,19 @@ async function verifyAll(baseDir: string = '.', color: boolean): Promise<void> {
   for (const info of snapshots) {
     let actual: string;
 
-    if (info.meta.command) {
-      actual = await captureFromCommand(info.meta.command);
-    } else if (info.meta.sourceFile) {
-      actual = await captureFromFile(info.meta.sourceFile);
-    } else {
-      console.log(formatFail(info.name, 'no command or source file', { color }));
+    try {
+      if (info.meta.command) {
+        actual = await captureFromCommand(info.meta.command);
+      } else if (info.meta.sourceFile) {
+        actual = await captureFromFile(info.meta.sourceFile);
+      } else {
+        console.log(formatFail(info.name, 'no command or source file', { color }));
+        failCount++;
+        continue;
+      }
+    } catch (err) {
+      const message = err instanceof Error ? err.message : String(err);
+      console.log(formatFail(info.name, message, { color }));
       failCount++;
       continue;
     }
