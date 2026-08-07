@@ -24,6 +24,8 @@ format and uses semantic versioning when versioned releases are published.
 - Update the test toolchain to patched dependency versions.
 - Update the `brace-expansion` override to 5.0.9 to address
   GHSA-rgw5-rvv9-x895 in the development toolchain.
+- Update the locked `js-yaml` dependency to 4.3.1 to address
+  GHSA-5p4m-2wfm-xmqj in the development toolchain.
 
 ## Release Links
 
