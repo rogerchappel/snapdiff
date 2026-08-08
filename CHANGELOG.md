@@ -26,6 +26,8 @@ format and uses semantic versioning when versioned releases are published.
   GHSA-rgw5-rvv9-x895 in the development toolchain.
 - Update the locked `js-yaml` dependency to 4.3.1 to address
   GHSA-5p4m-2wfm-xmqj in the development toolchain.
+- Update the locked `nanoid` dependency to 3.3.18 to address
+  GHSA-2v37-7h3g-55p8 in the development toolchain.
 
 ## Release Links
 
