@@ -38,10 +38,32 @@ const requiredGuidance = [
   ['the checkout path creates a tarball with npm pack', /\bnpm pack\b/],
   ['the checkout path installs the packed tarball', /npm install -g ["']\.\/\$package_tarball["']/],
   ['the registry command is labelled as post-release', /after the first npm release[\s\S]{0,200}npm install -g @rogerchappel\/snapdiff/i],
+  ['CI verifies a checked-in baseline', /CI then compares[\s\S]{0,160}checked-in baseline/i],
+  ['capture and update are described as baseline-authoring operations', /`capture` and `update` are intentional baseline-authoring operations/i],
 ];
 
 for (const [description, pattern] of requiredGuidance) {
   if (!pattern.test(readme)) errors.push(`README.md: missing guidance: ${description}`);
+}
+
+const ciSection = readme.match(/^## CI Integration\s*$([\s\S]*?)(?=^## |(?![\s\S]))/m)?.[1] ?? '';
+const ciExample = ciSection.match(/```ya?ml\s*([\s\S]*?)```/i)?.[1] ?? '';
+const verification = /snapdiff\s+verify\b[^\n]*--name(?:=|\s+)([\w.-]+)/g;
+
+for (const match of ciExample.matchAll(verification)) {
+  const baseline = match[1];
+  const precedingSteps = ciExample.slice(0, match.index);
+  const baselineWrite = new RegExp(
+    `snapdiff\\s+(?:capture|update)\\b[^\\n]*--name(?:=|\\s+)${baseline.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}(?:\\s|$)`,
+  );
+
+  if (baselineWrite.test(precedingSteps)) {
+    errors.push(`README.md: CI example replaces baseline ${baseline} before verifying it`);
+  }
+}
+
+if (!ciExample || !verification.test(ciExample)) {
+  errors.push('README.md: CI example must verify a named checked-in baseline');
 }
 
 if (errors.length > 0) {
