@@ -161,11 +161,22 @@ SnapDiff exits with code `1` on mismatch, making it trivial to integrate into CI
 ```yaml
 # GitHub Actions example (after the first npm release)
 - run: npm install -g @rogerchappel/snapdiff
-- run: snapdiff capture --from cmd --cmd "./build/mytool" --name tool-output
 - run: snapdiff verify --name tool-output
 ```
 
-If verification fails, your CI job fails. Simple.
+Commit `snapshots/tool-output.snap` and `snapshots/tool-output.meta.json` with your
+code. CI then compares the command's current output with that checked-in baseline;
+if verification fails, the job fails without replacing the expected output first.
+
+`capture` and `update` are intentional baseline-authoring operations. Run them
+locally when adding or accepting output, review the snapshot diff, and commit it:
+
+```bash
+snapdiff capture --from cmd --cmd "./build/mytool" --name tool-output
+# After an intentional output change:
+snapdiff update --from cmd --cmd "./build/mytool" --name tool-output
+git diff -- snapshots/tool-output.snap snapshots/tool-output.meta.json
+```
 
 ## Examples
 
