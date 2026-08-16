@@ -17,6 +17,21 @@ export interface CliArgs {
   baseDir?: string;
 }
 
+const VALUE_OPTIONS = new Set(['--name', '--from', '--cmd', '--file', '--mode', '--base-dir']);
+const FLAG_OPTIONS = new Set(['--all', '--no-color', '--help', '-h']);
+const VALID_MODES = ['exact', 'normalize', 'json-equiv'] as const;
+
+function requireOptionValue(args: string[], index: number, option: string): string {
+  const value = args[index + 1];
+
+  if (value === undefined || value === '' || VALUE_OPTIONS.has(value) || FLAG_OPTIONS.has(value)) {
+    console.error(`Missing value for ${option}`);
+    process.exit(2);
+  }
+
+  return value;
+}
+
 export function parseArgs(argv: string[]): CliArgs {
   const args = argv.slice(2); // skip node and script path
 
@@ -41,20 +56,31 @@ export function parseArgs(argv: string[]): CliArgs {
 
     switch (arg) {
       case '--name':
-        parsed.name = args[++i];
+        parsed.name = requireOptionValue(args, i, arg);
+        i++;
         break;
       case '--from':
-        parsed.from = args[++i] as 'cmd' | 'file';
+        parsed.from = requireOptionValue(args, i, arg) as 'cmd' | 'file';
+        i++;
         break;
       case '--cmd':
-        parsed.cmd = args[++i];
+        parsed.cmd = requireOptionValue(args, i, arg);
+        i++;
         break;
       case '--file':
-        parsed.file = args[++i];
+        parsed.file = requireOptionValue(args, i, arg);
+        i++;
         break;
-      case '--mode':
-        parsed.mode = args[++i] as 'exact' | 'normalize' | 'json-equiv';
+      case '--mode': {
+        const mode = requireOptionValue(args, i, arg);
+        if (!VALID_MODES.includes(mode as typeof VALID_MODES[number])) {
+          console.error(`Invalid value for --mode: ${mode} (expected exact, normalize, or json-equiv)`);
+          process.exit(2);
+        }
+        parsed.mode = mode as typeof VALID_MODES[number];
+        i++;
         break;
+      }
       case '--all':
         parsed.all = true;
         break;
@@ -62,7 +88,8 @@ export function parseArgs(argv: string[]): CliArgs {
         parsed.color = false;
         break;
       case '--base-dir':
-        parsed.baseDir = args[++i];
+        parsed.baseDir = requireOptionValue(args, i, arg);
+        i++;
         break;
       case '--help':
       case '-h':
