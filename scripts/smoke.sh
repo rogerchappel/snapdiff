@@ -175,6 +175,38 @@ else
   fail "unsafe snapshot name protection"
 fi
 
+# Test 15: invalid modes fail before writing snapshot files
+echo ""
+echo "--- Test 15: reject invalid comparison mode ---"
+if $SNAPDIFF capture --from file --file examples/fixture.txt --name invalid-mode \
+  --mode bogus --base-dir "$TEST_DIR" >/dev/null 2>&1; then
+  fail "invalid comparison mode should exit 2"
+elif [ "$?" -eq 2 ] \
+  && [ ! -e "$TEST_DIR/snapshots/invalid-mode.snap" ] \
+  && [ ! -e "$TEST_DIR/snapshots/invalid-mode.meta.json" ]; then
+  pass "invalid comparison mode creates no snapshot files"
+else
+  fail "invalid comparison mode rejection"
+fi
+
+# Test 16: value-taking options reject missing values
+echo ""
+echo "--- Test 16: reject missing option values ---"
+missing_values_rejected=true
+value_options=(--name --from --cmd --file --mode --base-dir)
+
+for option in "${value_options[@]}"; do
+  if $SNAPDIFF list "$option" >/dev/null 2>&1 || [ "$?" -ne 2 ]; then
+    missing_values_rejected=false
+  fi
+done
+
+if [ "$missing_values_rejected" = true ]; then
+  pass "missing option values exit 2"
+else
+  fail "missing option value rejection"
+fi
+
 echo ""
 echo "=== Results ==="
 echo "  Passed: $PASS"
