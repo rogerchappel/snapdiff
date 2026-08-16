@@ -70,6 +70,48 @@ describe('parseArgs', () => {
     expect(args.baseDir).toBe('/tmp');
   });
 
+  it('exits with code 2 for an invalid comparison mode', () => {
+    const exitSpy = vi.spyOn(process, 'exit').mockImplementation((() => {
+      throw new Error('process.exit called');
+    }) as (code?: number) => never);
+    const errorSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
+
+    expect(() => parseArgs([
+      'node', 'snapdiff', 'capture', '--name', 'test', '--from', 'file',
+      '--file', 'f.txt', '--mode', 'bogus',
+    ])).toThrow('process.exit called');
+    expect(errorSpy).toHaveBeenCalledWith(
+      'Invalid value for --mode: bogus (expected exact, normalize, or json-equiv)'
+    );
+    expect(exitSpy).toHaveBeenCalledWith(2);
+  });
+
+  it.each(['--name', '--from', '--cmd', '--file', '--mode', '--base-dir'])(
+    'exits with code 2 when %s has no value',
+    (option) => {
+      const exitSpy = vi.spyOn(process, 'exit').mockImplementation((() => {
+        throw new Error('process.exit called');
+      }) as (code?: number) => never);
+      const errorSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
+
+      expect(() => parseArgs(['node', 'snapdiff', 'list', option])).toThrow('process.exit called');
+      expect(errorSpy).toHaveBeenCalledWith(`Missing value for ${option}`);
+      expect(exitSpy).toHaveBeenCalledWith(2);
+    }
+  );
+
+  it('does not consume another option as a value', () => {
+    const exitSpy = vi.spyOn(process, 'exit').mockImplementation((() => {
+      throw new Error('process.exit called');
+    }) as (code?: number) => never);
+    const errorSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
+
+    expect(() => parseArgs(['node', 'snapdiff', 'list', '--base-dir', '--no-color']))
+      .toThrow('process.exit called');
+    expect(errorSpy).toHaveBeenCalledWith('Missing value for --base-dir');
+    expect(exitSpy).toHaveBeenCalledWith(2);
+  });
+
   it('defaults to exact mode when --mode not specified', () => {
     const args = parseArgs(['node', 'snapdiff', 'verify', '--name', 'test']);
     expect(args.mode).toBeUndefined();
