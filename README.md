@@ -178,6 +178,11 @@ snapdiff update --from cmd --cmd "./build/mytool" --name tool-output
 git diff -- snapshots/tool-output.snap snapshots/tool-output.meta.json
 ```
 
+Without `--from`, `update` reruns the source stored in snapshot metadata. Supplying
+`--from cmd --cmd ...` or `--from file --file ...` replaces that source and
+persists the replacement in metadata for later `verify`, `diff`, and `update`
+commands. Source options must be supplied as a complete, matching pair.
+
 ## Examples
 
 The `examples/` directory contains sample fixtures:
