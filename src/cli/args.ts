@@ -127,14 +127,7 @@ function validateArgs(args: CliArgs): void {
         console.error('capture requires --from (cmd or file)');
         process.exit(2);
       }
-      if (args.from === 'cmd' && !args.cmd) {
-        console.error('capture --from cmd requires --cmd');
-        process.exit(2);
-      }
-      if (args.from === 'file' && !args.file) {
-        console.error('capture --from file requires --file');
-        process.exit(2);
-      }
+      validateSourceOptions(args, 'capture');
       break;
 
     case 'verify':
@@ -156,12 +149,42 @@ function validateArgs(args: CliArgs): void {
         console.error('update requires --name');
         process.exit(2);
       }
+      if (args.from || args.cmd || args.file) {
+        if (!args.from) {
+          console.error('update source override requires --from (cmd or file)');
+          process.exit(2);
+        }
+        validateSourceOptions(args, 'update');
+      }
       break;
 
     case 'list':
     case 'prune':
       // no required args
       break;
+  }
+}
+
+function validateSourceOptions(args: CliArgs, command: 'capture' | 'update'): void {
+  if (args.from !== 'cmd' && args.from !== 'file') {
+    console.error(`${command} --from must be cmd or file`);
+    process.exit(2);
+  }
+  if (args.from === 'cmd' && !args.cmd) {
+    console.error(`${command} --from cmd requires --cmd`);
+    process.exit(2);
+  }
+  if (args.from === 'file' && !args.file) {
+    console.error(`${command} --from file requires --file`);
+    process.exit(2);
+  }
+  if (args.from === 'cmd' && args.file) {
+    console.error(`${command} --from cmd does not accept --file`);
+    process.exit(2);
+  }
+  if (args.from === 'file' && args.cmd) {
+    console.error(`${command} --from file does not accept --cmd`);
+    process.exit(2);
   }
 }
 
@@ -182,7 +205,7 @@ COMMANDS:
 
 OPTIONS:
   --name <name>      Snapshot name (letters, numbers, dots, underscores, hyphens)
-  --from <cmd|file>  Capture source: command or file
+  --from <cmd|file>  Capture source, or replacement source for update
   --cmd <command>    Command to execute (with --from cmd)
   --file <path>      File to read (with --from file)
   --mode <mode>      Comparison mode: exact, normalize, json-equiv (default: exact)
@@ -198,6 +221,7 @@ EXAMPLES:
   snapdiff diff --name mytool-output
   snapdiff list
   snapdiff update --name mytool-output
+  snapdiff update --from cmd --cmd "newtool --input fixture.json" --name mytool-output
   snapdiff prune
 `);
 }
