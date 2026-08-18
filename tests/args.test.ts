@@ -50,6 +50,29 @@ describe('parseArgs', () => {
     expect(args.name).toBe('test');
   });
 
+  it('parses an update source override', () => {
+    const args = parseArgs(['node', 'snapdiff', 'update', '--name', 'test', '--from', 'file', '--file', 'new.txt']);
+    expect(args).toMatchObject({ command: 'update', name: 'test', from: 'file', file: 'new.txt' });
+  });
+
+  it.each([
+    [['--cmd', 'echo ignored'], 'update source override requires --from (cmd or file)'],
+    [['--from', 'cmd'], 'update --from cmd requires --cmd'],
+    [['--from', 'file'], 'update --from file requires --file'],
+    [['--from', 'cmd', '--cmd', 'echo ok', '--file', 'ignored'], 'update --from cmd does not accept --file'],
+    [['--from', 'other', '--cmd', 'echo ignored'], 'update --from must be cmd or file'],
+  ])('rejects an incoherent update source override: %j', (sourceArgs, message) => {
+    const exitSpy = vi.spyOn(process, 'exit').mockImplementation((() => {
+      throw new Error('process.exit called');
+    }) as (code?: number) => never);
+    const errorSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
+
+    expect(() => parseArgs(['node', 'snapdiff', 'update', '--name', 'test', ...sourceArgs]))
+      .toThrow('process.exit called');
+    expect(errorSpy).toHaveBeenCalledWith(message);
+    expect(exitSpy).toHaveBeenCalledWith(2);
+  });
+
   it('parses prune command', () => {
     const args = parseArgs(['node', 'snapdiff', 'prune']);
     expect(args.command).toBe('prune');

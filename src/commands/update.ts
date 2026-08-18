@@ -10,18 +10,20 @@ export async function handleUpdate(args: CliArgs): Promise<void> {
   }
 
   const { meta } = await loadSnapshot(name, args.baseDir);
+  const command = args.from === 'cmd' ? args.cmd : args.from === 'file' ? undefined : meta.command;
+  const sourceFile = args.from === 'file' ? args.file : args.from === 'cmd' ? undefined : meta.sourceFile;
   let actual: string;
 
-  if (meta.command) {
-    actual = await captureFromCommand(meta.command);
-  } else if (meta.sourceFile) {
-    actual = await captureFromFile(meta.sourceFile);
+  if (command) {
+    actual = await captureFromCommand(command);
+  } else if (sourceFile) {
+    actual = await captureFromFile(sourceFile);
   } else {
     console.error('Snapshot has no command or source file recorded');
     process.exit(2);
   }
 
-  await saveSnapshot(name, actual, meta.mode, args.baseDir, meta.command, meta.sourceFile);
+  await saveSnapshot(name, actual, meta.mode, args.baseDir, command, sourceFile);
 
   const bytes = Buffer.byteLength(actual, 'utf-8');
   const lines = actual.split('\n').length;
