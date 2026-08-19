@@ -103,7 +103,9 @@ Options:
 Exit codes: `0` = pass, `1` = mismatch or a failed producer command during
 `--all`, `2` = usage/input error or a failed producer command during a
 single-snapshot operation. `verify --all` reports a command failure for that
-snapshot and continues checking the rest.
+snapshot and continues checking the rest. An incomplete snapshot pair or
+malformed `.meta.json` is an input error: the command names the affected
+snapshot and exits nonzero instead of reporting that no snapshots exist.
 
 ### `snapdiff diff`
 
@@ -137,7 +139,9 @@ diagnostics include the exit code and command stderr when available.
 
 ### `snapdiff prune`
 
-Remove orphaned snapshot files (`.snap` files without matching `.meta.json`).
+Remove incomplete snapshot pairs: a `.snap` without matching `.meta.json`, or
+a `.meta.json` without matching `.snap`. Complete pairs with malformed metadata
+are retained for manual repair; `list` and `verify --all` report them by name.
 
 ```bash
 snapdiff prune

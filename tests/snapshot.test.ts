@@ -106,4 +106,24 @@ describe('listSnapshots', () => {
     expect(list[1].name).toBe('mmm-snap');
     expect(list[2].name).toBe('zzz-snap');
   });
+
+  it('rejects malformed metadata with the snapshot name', async () => {
+    const dir = join(TEST_DIR, 'snapshots');
+    await fs.mkdir(dir, { recursive: true });
+    await fs.writeFile(join(dir, 'broken.snap'), 'expected');
+    await fs.writeFile(join(dir, 'broken.meta.json'), '{not-json');
+
+    await expect(listSnapshots(TEST_DIR)).rejects.toThrow(/broken.*invalid metadata/i);
+  });
+
+  it.each([
+    ['missing-content', 'missing-content.meta.json'],
+    ['missing-metadata', 'missing-metadata.snap'],
+  ])('rejects incomplete snapshot pair %s', async (name, fileName) => {
+    const dir = join(TEST_DIR, 'snapshots');
+    await fs.mkdir(dir, { recursive: true });
+    await fs.writeFile(join(dir, fileName), fileName.endsWith('.json') ? '{}' : 'expected');
+
+    await expect(listSnapshots(TEST_DIR)).rejects.toThrow(new RegExp(`${name}.*missing`, 'i'));
+  });
 });
