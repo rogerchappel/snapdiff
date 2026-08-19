@@ -130,31 +130,39 @@ export async function deleteSnapshot(name: string, baseDir: string = '.'): Promi
 
 export async function listSnapshots(baseDir: string = '.'): Promise<SnapshotInfo[]> {
   const dir = getSnapshotDir(baseDir);
+  let entries: string[];
 
   try {
-    const entries = await fs.readdir(dir);
-    const metaFiles = entries.filter((e) => e.endsWith('.meta.json'));
-
-    const infos: SnapshotInfo[] = [];
-
-    for (const metaFile of metaFiles) {
-      const name = metaFile.replace('.meta.json', '');
-      const metaPath = join(dir, metaFile);
-      const snapPath = getSnapPath(baseDir, name);
-
-      try {
-        const metaRaw = await fs.readFile(metaPath, 'utf-8');
-        const meta = JSON.parse(metaRaw) as SnapshotMeta;
-        infos.push({ name, metaPath, snapPath, meta });
-      } catch {
-        // skip corrupted meta files
-      }
-    }
-
-    return infos.sort((a, b) => a.name.localeCompare(b.name));
-  } catch {
-    return [];
+    entries = await fs.readdir(dir);
+  } catch (err) {
+    if ((err as NodeJS.ErrnoException).code === 'ENOENT') return [];
+    throw new Error(`Cannot read snapshots directory: ${err instanceof Error ? err.message : String(err)}`);
   }
+
+  const metaNames = new Set(entries.filter((entry) => entry.endsWith('.meta.json')).map((entry) => entry.slice(0, -'.meta.json'.length)));
+  const snapNames = new Set(entries.filter((entry) => entry.endsWith('.snap')).map((entry) => entry.slice(0, -'.snap'.length)));
+
+  for (const name of [...metaNames].sort()) {
+    if (!snapNames.has(name)) throw new Error(`Invalid snapshot "${name}": missing .snap file`);
+  }
+  for (const name of [...snapNames].sort()) {
+    if (!metaNames.has(name)) throw new Error(`Invalid snapshot "${name}": missing .meta.json file`);
+  }
+
+  const infos: SnapshotInfo[] = [];
+  for (const name of [...metaNames].sort()) {
+    const metaPath = getMetaPath(baseDir, name);
+    const snapPath = getSnapPath(baseDir, name);
+    try {
+      const metaRaw = await fs.readFile(metaPath, 'utf-8');
+      const meta = JSON.parse(metaRaw) as SnapshotMeta;
+      infos.push({ name, metaPath, snapPath, meta });
+    } catch (err) {
+      throw new Error(`Snapshot "${name}" has invalid metadata: ${err instanceof Error ? err.message : String(err)}`);
+    }
+  }
+
+  return infos;
 }
 
 export async function captureFromCommand(
