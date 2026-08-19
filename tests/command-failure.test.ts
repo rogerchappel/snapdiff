@@ -66,3 +66,14 @@ describe('failed producer commands', () => {
     expect(await fs.readFile(metaPath, 'utf8')).toBe(beforeMeta);
   });
 });
+
+describe('invalid snapshot storage', () => {
+  it('makes verify --all fail with a named malformed metadata error', async () => {
+    const dir = join(TEST_DIR, 'snapshots');
+    await fs.mkdir(dir, { recursive: true });
+    await fs.writeFile(join(dir, 'broken.snap'), 'expected');
+    await fs.writeFile(join(dir, 'broken.meta.json'), '{not-json');
+
+    await expect(handleVerify(args({ all: true }))).rejects.toThrow(/broken.*invalid metadata/i);
+  });
+});
