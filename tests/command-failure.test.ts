@@ -4,6 +4,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { handleCapture } from '../src/commands/capture.js';
 import { handleUpdate } from '../src/commands/update.js';
 import { handleVerify } from '../src/commands/verify.js';
+import { handlePrune } from '../src/commands/prune.js';
 import { saveSnapshot } from '../src/core/snapshot.js';
 import type { CliArgs } from '../src/cli/args.js';
 
@@ -75,5 +76,26 @@ describe('invalid snapshot storage', () => {
     await fs.writeFile(join(dir, 'broken.meta.json'), '{not-json');
 
     await expect(handleVerify(args({ all: true }))).rejects.toThrow(/broken.*invalid metadata/i);
+  });
+
+  it('still verifies valid snapshot pairs with --all', async () => {
+    await saveSnapshot('valid', 'stable', 'exact', TEST_DIR, `node -e "process.stdout.write('stable')"`);
+    const exit = vi.spyOn(process, 'exit').mockImplementation(((code?: number) => {
+      throw new Error(`exit:${code}`);
+    }) as never);
+
+    await expect(handleVerify(args({ all: true }))).rejects.toThrow('exit:0');
+    expect(exit).toHaveBeenCalledWith(0);
+  });
+
+  it('prunes both kinds of incomplete snapshot pair', async () => {
+    const dir = join(TEST_DIR, 'snapshots');
+    await fs.mkdir(dir, { recursive: true });
+    await fs.writeFile(join(dir, 'missing-metadata.snap'), 'expected');
+    await fs.writeFile(join(dir, 'missing-content.meta.json'), '{}');
+
+    await handlePrune(args({ command: 'prune' }));
+
+    await expect(fs.readdir(dir)).resolves.toEqual([]);
   });
 });
