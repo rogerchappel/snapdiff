@@ -156,6 +156,13 @@ Snapshots live in a `snapshots/` directory at your project root (or wherever `--
 - `snapshots/<name>.snap` — The raw expected output
 - `snapshots/<name>.meta.json` — Metadata: capture timestamp, comparison mode, source command/file, content hash
 
+SnapDiff validates each pair before listing, verifying, or updating it. The
+metadata name, mode, timestamp, source fields, size, and content hash must be
+valid and must match the `.snap` content. A corruption error names the affected
+snapshot and exits non-zero instead of accepting an edited baseline. Restore
+both files from version control or intentionally re-capture the snapshot to
+recover; do not hand-edit only one half of the pair.
+
 The format is intentionally simple — no binary blobs, no opaque archives. You can read, edit, and version-control these files directly.
 
 Snapshot names are identifiers, not paths. For example, `api-response.v2` is valid, while `../api-response`, `nested/api-response`, and absolute paths are rejected.
