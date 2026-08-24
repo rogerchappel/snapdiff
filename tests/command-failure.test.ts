@@ -78,6 +78,19 @@ describe('invalid snapshot storage', () => {
     await expect(handleVerify(args({ all: true }))).rejects.toThrow(/broken.*invalid metadata/i);
   });
 
+  it.each([{ all: true }, { name: 'edited' }])('rejects edited baseline content during verify', async (selection) => {
+    const { snapPath } = await saveSnapshot(
+      'edited',
+      'original',
+      'exact',
+      TEST_DIR,
+      `node -e "process.stdout.write('changed')"`
+    );
+    await fs.writeFile(snapPath, 'changed');
+
+    await expect(handleVerify(args(selection))).rejects.toThrow(/edited.*corrupted.*size|edited.*corrupted.*contentHash/i);
+  });
+
   it('still verifies valid snapshot pairs with --all', async () => {
     await saveSnapshot('valid', 'stable', 'exact', TEST_DIR, `node -e "process.stdout.write('stable')"`);
     const exit = vi.spyOn(process, 'exit').mockImplementation(((code?: number) => {
