@@ -67,6 +67,34 @@ describe('loadSnapshot', () => {
     expect(content).toBe('world');
     expect(meta.name).toBe('load-test');
   });
+
+  it.each([
+    ['name', 'other'],
+    ['mode', 'loose'],
+    ['captureTime', 'not-a-date'],
+    ['sourceFile', 42],
+    ['size', '5'],
+    ['contentHash', 123],
+  ])('rejects corrupted %s metadata', async (field, value) => {
+    const { metaPath } = await saveSnapshot('corrupt-meta', 'world', 'exact', TEST_DIR, undefined, 'source.txt');
+    const meta = JSON.parse(await fs.readFile(metaPath, 'utf-8'));
+    meta[field] = value;
+    await fs.writeFile(metaPath, JSON.stringify(meta));
+
+    await expect(loadSnapshot('corrupt-meta', TEST_DIR)).rejects.toThrow(/corrupt-meta.*corrupted/i);
+  });
+
+  it.each([
+    ['size', (meta: Record<string, unknown>) => { meta.size = 99; }],
+    ['hash', (meta: Record<string, unknown>) => { meta.contentHash = 'deadbeef'; }],
+  ])('rejects a stored content %s mismatch', async (_kind, mutate) => {
+    const { metaPath } = await saveSnapshot('corrupt-content', 'world', 'exact', TEST_DIR);
+    const meta = JSON.parse(await fs.readFile(metaPath, 'utf-8'));
+    mutate(meta);
+    await fs.writeFile(metaPath, JSON.stringify(meta));
+
+    await expect(loadSnapshot('corrupt-content', TEST_DIR)).rejects.toThrow(/corrupt-content.*corrupted/i);
+  });
 });
 
 describe('snapshotExists', () => {
@@ -125,5 +153,12 @@ describe('listSnapshots', () => {
     await fs.writeFile(join(dir, fileName), fileName.endsWith('.json') ? '{}' : 'expected');
 
     await expect(listSnapshots(TEST_DIR)).rejects.toThrow(new RegExp(`${name}.*missing`, 'i'));
+  });
+
+  it('rejects rather than hiding corrupted snapshots', async () => {
+    const { snapPath } = await saveSnapshot('edited', 'original', 'exact', TEST_DIR);
+    await fs.writeFile(snapPath, 'changed');
+
+    await expect(listSnapshots(TEST_DIR)).rejects.toThrow(/edited.*corrupted/i);
   });
 });
