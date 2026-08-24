@@ -14,6 +14,8 @@ SnapDiff is the standalone alternative. Capture output. Compare later. Exit non-
 
 ## Quick Start
 
+SnapDiff supports Node.js 18 and newer.
+
 `@rogerchappel/snapdiff` is not published to npm yet. Until the first release,
 install a tarball built from a checkout:
 
