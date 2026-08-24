@@ -78,7 +78,7 @@ async function verifyAll(baseDir: string = '.', color: boolean): Promise<void> {
       continue;
     }
 
-    const result = compare(info.meta.contentHash ? (await loadSnapshot(info.name, baseDir)).content : '', actual, info.meta.mode);
+    const result = compare((await loadSnapshot(info.name, baseDir)).content, actual, info.meta.mode);
 
     if (result.match) {
       console.log(formatPass(info.name, { color }));

@@ -20,6 +20,7 @@ export interface SnapshotInfo {
 
 const SNAPSHOTS_DIR = 'snapshots';
 const SNAPSHOT_NAME_PATTERN = /^[A-Za-z0-9][A-Za-z0-9._-]*$/;
+const SNAPSHOT_MODES = new Set(['exact', 'normalize', 'json-equiv']);
 
 export function assertValidSnapshotName(name: string): void {
   if (!SNAPSHOT_NAME_PATTERN.test(name)) {
@@ -55,6 +56,49 @@ function computeHash(content: string): string {
     hash = ((hash << 5) + hash + content.charCodeAt(i)) & 0xffffffff;
   }
   return hash.toString(16);
+}
+
+function corruption(name: string, detail: string): Error {
+  return new Error(`Snapshot "${name}" is corrupted: ${detail}. Re-capture or restore the snapshot pair.`);
+}
+
+function validateMetadata(name: string, value: unknown): SnapshotMeta {
+  if (!value || typeof value !== 'object' || Array.isArray(value)) {
+    throw corruption(name, 'metadata must be a JSON object');
+  }
+  const meta = value as Record<string, unknown>;
+  if (meta.name !== name) throw corruption(name, `metadata name must be "${name}"`);
+  if (typeof meta.mode !== 'string' || !SNAPSHOT_MODES.has(meta.mode)) {
+    throw corruption(name, 'metadata mode must be exact, normalize, or json-equiv');
+  }
+  if (typeof meta.captureTime !== 'string' || !Number.isFinite(Date.parse(meta.captureTime))) {
+    throw corruption(name, 'metadata captureTime must be a valid timestamp');
+  }
+  for (const field of ['command', 'sourceFile'] as const) {
+    if (meta[field] !== undefined && (typeof meta[field] !== 'string' || meta[field].length === 0)) {
+      throw corruption(name, `metadata ${field} must be a non-empty string when present`);
+    }
+  }
+  if (meta.command !== undefined && meta.sourceFile !== undefined) {
+    throw corruption(name, 'metadata must not define both command and sourceFile');
+  }
+  if (typeof meta.contentHash !== 'string' || !/^-?[0-9a-f]+$/.test(meta.contentHash)) {
+    throw corruption(name, 'metadata contentHash must be a hexadecimal string');
+  }
+  if (!Number.isSafeInteger(meta.size) || (meta.size as number) < 0) {
+    throw corruption(name, 'metadata size must be a non-negative integer');
+  }
+  return meta as unknown as SnapshotMeta;
+}
+
+function verifyContent(name: string, content: string, meta: SnapshotMeta): void {
+  if (meta.size !== content.length) {
+    throw corruption(name, `stored size is ${meta.size}, but the snapshot contains ${content.length} characters`);
+  }
+  const actualHash = computeHash(content);
+  if (meta.contentHash !== actualHash) {
+    throw corruption(name, `stored contentHash is ${meta.contentHash}, but the snapshot hashes to ${actualHash}`);
+  }
 }
 
 export async function saveSnapshot(
@@ -96,7 +140,14 @@ export async function loadSnapshot(
 
   const content = await fs.readFile(snapPath, 'utf-8');
   const metaRaw = await fs.readFile(metaPath, 'utf-8');
-  const meta = JSON.parse(metaRaw) as SnapshotMeta;
+  let parsed: unknown;
+  try {
+    parsed = JSON.parse(metaRaw);
+  } catch {
+    throw corruption(name, 'invalid metadata JSON');
+  }
+  const meta = validateMetadata(name, parsed);
+  verifyContent(name, content, meta);
 
   return { content, meta };
 }
@@ -153,13 +204,8 @@ export async function listSnapshots(baseDir: string = '.'): Promise<SnapshotInfo
   for (const name of [...metaNames].sort()) {
     const metaPath = getMetaPath(baseDir, name);
     const snapPath = getSnapPath(baseDir, name);
-    try {
-      const metaRaw = await fs.readFile(metaPath, 'utf-8');
-      const meta = JSON.parse(metaRaw) as SnapshotMeta;
-      infos.push({ name, metaPath, snapPath, meta });
-    } catch (err) {
-      throw new Error(`Snapshot "${name}" has invalid metadata: ${err instanceof Error ? err.message : String(err)}`);
-    }
+    const { meta } = await loadSnapshot(name, baseDir);
+    infos.push({ name, metaPath, snapPath, meta });
   }
 
   return infos;
