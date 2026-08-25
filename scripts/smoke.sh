@@ -6,7 +6,7 @@ set -euo pipefail
 
 cd "$(dirname "${BASH_SOURCE[0]}")/.."
 
-SNAPDIFF="node dist/index.js"
+SNAPDIFF="node $PWD/dist/index.js"
 TEST_DIR="$(mktemp -d)"
 trap 'rm -rf "$TEST_DIR"' EXIT
 
@@ -205,6 +205,43 @@ if [ "$missing_values_rejected" = true ]; then
   pass "missing option values exit 2"
 else
   fail "missing option value rejection"
+fi
+
+# Test 17: replay relative sources from their capture working directory
+echo ""
+echo "--- Test 17: stable capture execution context ---"
+PROJECT_DIR="$TEST_DIR/context-project"
+OTHER_DIR="$TEST_DIR/context-other"
+mkdir -p "$PROJECT_DIR" "$OTHER_DIR"
+printf 'file version one\n' > "$PROJECT_DIR/file.txt"
+printf 'command version one\n' > "$PROJECT_DIR/command.txt"
+
+(
+  cd "$PROJECT_DIR"
+  $SNAPDIFF capture --from file --file file.txt --name context-file --base-dir "$PROJECT_DIR" >/dev/null
+  $SNAPDIFF capture --from cmd --cmd "cat command.txt" --name context-command --base-dir "$PROJECT_DIR" >/dev/null
+)
+
+context_ok=true
+(
+  cd "$OTHER_DIR"
+  $SNAPDIFF verify --name context-file --base-dir "$PROJECT_DIR" --no-color >/dev/null
+  $SNAPDIFF diff --name context-command --base-dir "$PROJECT_DIR" --no-color >/dev/null
+) || context_ok=false
+
+printf 'file version two\n' > "$PROJECT_DIR/file.txt"
+printf 'command version two\n' > "$PROJECT_DIR/command.txt"
+(
+  cd "$OTHER_DIR"
+  $SNAPDIFF update --name context-file --base-dir "$PROJECT_DIR" >/dev/null
+  $SNAPDIFF update --name context-command --base-dir "$PROJECT_DIR" >/dev/null
+  $SNAPDIFF verify --all --base-dir "$PROJECT_DIR" --no-color >/dev/null
+) || context_ok=false
+
+if [ "$context_ok" = true ]; then
+  pass "relative file and command sources replay after changing cwd"
+else
+  fail "stable capture execution context"
 fi
 
 echo ""

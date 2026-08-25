@@ -34,9 +34,11 @@ describe('saveSnapshot', () => {
   });
 
   it('records file metadata', async () => {
-    const { metaPath } = await saveSnapshot('file-snap', 'content', 'normalize', TEST_DIR, undefined, 'examples/fixture.txt');
+    const sourceCwd = join(TEST_DIR, 'project');
+    const { metaPath } = await saveSnapshot('file-snap', 'content', 'normalize', TEST_DIR, undefined, 'examples/fixture.txt', sourceCwd);
     const meta = JSON.parse(await fs.readFile(metaPath, 'utf-8'));
     expect(meta.sourceFile).toBe('examples/fixture.txt');
+    expect(meta.sourceCwd).toBe(sourceCwd);
     expect(meta.mode).toBe('normalize');
   });
 
