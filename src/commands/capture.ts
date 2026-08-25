@@ -22,7 +22,8 @@ export async function handleCapture(args: CliArgs): Promise<void> {
     mode,
     args.baseDir,
     args.cmd,
-    args.file
+    args.file,
+    process.cwd()
   );
 
   const lines = content.split('\n').length;

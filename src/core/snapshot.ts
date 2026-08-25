@@ -1,5 +1,5 @@
 import { promises as fs } from 'node:fs';
-import { join } from 'node:path';
+import { isAbsolute, join, resolve } from 'node:path';
 
 export interface SnapshotMeta {
   name: string;
@@ -7,6 +7,7 @@ export interface SnapshotMeta {
   mode: 'exact' | 'normalize' | 'json-equiv';
   command?: string;
   sourceFile?: string;
+  sourceCwd?: string;
   contentHash: string;
   size: number;
 }
@@ -79,6 +80,10 @@ function validateMetadata(name: string, value: unknown): SnapshotMeta {
       throw corruption(name, `metadata ${field} must be a non-empty string when present`);
     }
   }
+  if (meta.sourceCwd !== undefined &&
+      (typeof meta.sourceCwd !== 'string' || !isAbsolute(meta.sourceCwd))) {
+    throw corruption(name, 'metadata sourceCwd must be an absolute path when present');
+  }
   if (meta.command !== undefined && meta.sourceFile !== undefined) {
     throw corruption(name, 'metadata must not define both command and sourceFile');
   }
@@ -107,7 +112,8 @@ export async function saveSnapshot(
   mode: 'exact' | 'normalize' | 'json-equiv',
   baseDir: string = '.',
   command?: string,
-  sourceFile?: string
+  sourceFile?: string,
+  sourceCwd?: string
 ): Promise<{ snapPath: string; metaPath: string }> {
   await ensureSnapshotDir(baseDir);
 
@@ -122,6 +128,7 @@ export async function saveSnapshot(
     mode,
     command,
     sourceFile,
+    sourceCwd,
     contentHash: computeHash(content),
     size: content.length,
   };
@@ -234,7 +241,9 @@ export async function captureFromCommand(
 }
 
 export async function captureFromFile(
-  filePath: string
+  filePath: string,
+  cwd?: string
 ): Promise<string> {
-  return fs.readFile(filePath, 'utf-8');
+  const resolvedPath = cwd && !isAbsolute(filePath) ? resolve(cwd, filePath) : filePath;
+  return fs.readFile(resolvedPath, 'utf-8');
 }
