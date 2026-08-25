@@ -156,6 +156,13 @@ Snapshots live in a `snapshots/` directory at your project root (or wherever `--
 - `snapshots/<name>.snap` — The raw expected output
 - `snapshots/<name>.meta.json` — Metadata: capture timestamp, comparison mode, source command/file, content hash
 
+Relative `--file` paths and `--cmd` commands are replayed from the working
+directory where the snapshot was captured. This execution directory is stored
+in new snapshot metadata, so `verify`, `diff`, `update`, and `verify --all`
+behave consistently when invoked from another directory with the same absolute
+`--base-dir`. Older metadata without an execution directory keeps the legacy
+behavior of resolving sources from the current working directory.
+
 SnapDiff validates each pair before listing, verifying, or updating it. The
 metadata name, mode, timestamp, source fields, size, and content hash must be
 valid and must match the `.snap` content. A corruption error names the affected
