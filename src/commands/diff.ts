@@ -16,9 +16,9 @@ export async function handleDiff(args: CliArgs): Promise<void> {
   let actual: string;
 
   if (meta.command) {
-    actual = await captureFromCommand(meta.command);
+    actual = await captureFromCommand(meta.command, meta.sourceCwd);
   } else if (meta.sourceFile) {
-    actual = await captureFromFile(meta.sourceFile);
+    actual = await captureFromFile(meta.sourceFile, meta.sourceCwd);
   } else {
     console.error('Snapshot has no command or source file recorded');
     process.exit(2);

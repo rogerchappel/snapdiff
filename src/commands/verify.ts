@@ -26,9 +26,9 @@ async function verifySingle(name: string, baseDir: string = '.', color: boolean)
   let actual: string;
 
   if (meta.command) {
-    actual = await captureFromCommand(meta.command);
+    actual = await captureFromCommand(meta.command, meta.sourceCwd);
   } else if (meta.sourceFile) {
-    actual = await captureFromFile(meta.sourceFile);
+    actual = await captureFromFile(meta.sourceFile, meta.sourceCwd);
   } else {
     console.error('Snapshot has no command or source file recorded');
     process.exit(2);
@@ -63,9 +63,9 @@ async function verifyAll(baseDir: string = '.', color: boolean): Promise<void> {
 
     try {
       if (info.meta.command) {
-        actual = await captureFromCommand(info.meta.command);
+      actual = await captureFromCommand(info.meta.command, info.meta.sourceCwd);
       } else if (info.meta.sourceFile) {
-        actual = await captureFromFile(info.meta.sourceFile);
+      actual = await captureFromFile(info.meta.sourceFile, info.meta.sourceCwd);
       } else {
         console.log(formatFail(info.name, 'no command or source file', { color }));
         failCount++;
