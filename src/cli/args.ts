@@ -20,6 +20,25 @@ export interface CliArgs {
 const VALUE_OPTIONS = new Set(['--name', '--from', '--cmd', '--file', '--mode', '--base-dir']);
 const FLAG_OPTIONS = new Set(['--all', '--no-color', '--help', '-h']);
 const VALID_MODES = ['exact', 'normalize', 'json-equiv'] as const;
+const GLOBAL_OPTION_KEYS = new Set<keyof CliArgs>(['baseDir', 'color']);
+const COMMAND_OPTION_KEYS: Record<string, ReadonlySet<keyof CliArgs>> = {
+  capture: new Set(['name', 'from', 'cmd', 'file', 'mode']),
+  verify: new Set(['name', 'all']),
+  diff: new Set(['name']),
+  list: new Set(),
+  update: new Set(['name', 'from', 'cmd', 'file']),
+  prune: new Set(),
+};
+const OPTION_LABELS: Partial<Record<keyof CliArgs, string>> = {
+  name: '--name',
+  from: '--from',
+  cmd: '--cmd',
+  file: '--file',
+  mode: '--mode',
+  all: '--all',
+  color: '--no-color',
+  baseDir: '--base-dir',
+};
 
 function requireOptionValue(args: string[], index: number, option: string): string {
   const value = args[index + 1];
@@ -108,6 +127,8 @@ export function parseArgs(argv: string[]): CliArgs {
 }
 
 function validateArgs(args: CliArgs): void {
+  validateCommandOptions(args);
+
   if (args.name) {
     try {
       assertValidSnapshotName(args.name);
@@ -131,6 +152,10 @@ function validateArgs(args: CliArgs): void {
       break;
 
     case 'verify':
+      if (args.name && args.all) {
+        console.error('verify accepts either --name or --all, not both');
+        process.exit(2);
+      }
       if (!args.name && !args.all) {
         console.error('verify requires --name or --all');
         process.exit(2);
@@ -162,6 +187,16 @@ function validateArgs(args: CliArgs): void {
     case 'prune':
       // no required args
       break;
+  }
+}
+
+function validateCommandOptions(args: CliArgs): void {
+  const supported = COMMAND_OPTION_KEYS[args.command];
+
+  for (const key of Object.keys(args) as (keyof CliArgs)[]) {
+    if (key === 'command' || GLOBAL_OPTION_KEYS.has(key) || supported.has(key)) continue;
+    console.error(`${args.command} does not accept ${OPTION_LABELS[key]}`);
+    process.exit(2);
   }
 }
 
