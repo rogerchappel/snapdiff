@@ -93,6 +93,36 @@ describe('parseArgs', () => {
     expect(args.baseDir).toBe('/tmp');
   });
 
+  it.each([
+    ['list', ['--name', 'ignored'], '--name'],
+    ['prune', ['--name', 'ignored'], '--name'],
+    ['verify', ['--mode', 'exact', '--name', 'test'], '--mode'],
+    ['diff', ['--all', '--name', 'test'], '--all'],
+    ['update', ['--mode', 'normalize', '--name', 'test'], '--mode'],
+  ])('rejects %s with unsupported option %s', (command, options, unsupported) => {
+    const exitSpy = vi.spyOn(process, 'exit').mockImplementation((() => {
+      throw new Error('process.exit called');
+    }) as (code?: number) => never);
+    const errorSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
+
+    expect(() => parseArgs(['node', 'snapdiff', command, ...options]))
+      .toThrow('process.exit called');
+    expect(errorSpy).toHaveBeenCalledWith(`${command} does not accept ${unsupported}`);
+    expect(exitSpy).toHaveBeenCalledWith(2);
+  });
+
+  it('rejects verify with both --all and --name', () => {
+    const exitSpy = vi.spyOn(process, 'exit').mockImplementation((() => {
+      throw new Error('process.exit called');
+    }) as (code?: number) => never);
+    const errorSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
+
+    expect(() => parseArgs(['node', 'snapdiff', 'verify', '--all', '--name', 'test']))
+      .toThrow('process.exit called');
+    expect(errorSpy).toHaveBeenCalledWith('verify accepts either --name or --all, not both');
+    expect(exitSpy).toHaveBeenCalledWith(2);
+  });
+
   it('exits with code 2 for an invalid comparison mode', () => {
     const exitSpy = vi.spyOn(process, 'exit').mockImplementation((() => {
       throw new Error('process.exit called');

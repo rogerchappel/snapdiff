@@ -72,6 +72,10 @@ snapdiff verify --name api-response
 
 ## CLI Reference
 
+All commands accept `--base-dir <dir>` to select the project root and
+`--no-color` to disable colored output. Other options are command-specific;
+unsupported combinations are usage errors (exit code `2`).
+
 ### `snapdiff capture`
 
 Capture output from a command or file.
@@ -99,8 +103,7 @@ snapdiff verify --all
 
 Options:
 - `--name` — Snapshot to verify
-- `--all` — Verify all snapshots
-- `--no-color` — Disable colored output
+- `--all` — Verify all snapshots (mutually exclusive with `--name`)
 
 Exit codes: `0` = pass, `1` = mismatch or a failed producer command during
 `--all`, `2` = usage/input error or a failed producer command during a
@@ -117,6 +120,9 @@ Show a human-readable diff between stored and current output.
 snapdiff diff --name mytool-output
 ```
 
+Options:
+- `--name` — Snapshot to compare (required)
+
 ### `snapdiff list`
 
 List all stored snapshots with metadata.
@@ -125,6 +131,8 @@ List all stored snapshots with metadata.
 snapdiff list
 ```
 
+`list` has no command-specific options.
+
 ### `snapdiff update`
 
 Accept current output as the new baseline.
@@ -132,6 +140,12 @@ Accept current output as the new baseline.
 ```bash
 snapdiff update --name mytool-output
 ```
+
+Options:
+- `--name` — Snapshot to update (required)
+- `--from` — Optional replacement source: `cmd` or `file`
+- `--cmd` — Replacement command (with `--from cmd`)
+- `--file` — Replacement file (with `--from file`)
 
 Command-backed `capture`, `diff`, `verify`, and `update` operations require the
 recorded command to exit successfully. Output from a non-zero command is never
@@ -144,6 +158,7 @@ diagnostics include the exit code and command stderr when available.
 Remove incomplete snapshot pairs: a `.snap` without matching `.meta.json`, or
 a `.meta.json` without matching `.snap`. Complete pairs with malformed metadata
 are retained for manual repair; `list` and `verify --all` report them by name.
+`prune` has no command-specific options.
 
 ```bash
 snapdiff prune

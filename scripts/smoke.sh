@@ -207,9 +207,33 @@ else
   fail "missing option value rejection"
 fi
 
-# Test 17: replay relative sources from their capture working directory
+# Test 17: command-specific options are enforced
 echo ""
-echo "--- Test 17: stable capture execution context ---"
+echo "--- Test 17: reject unsupported and ambiguous options ---"
+option_scope_ok=true
+
+if output=$($SNAPDIFF list --name ignored 2>&1) || [ "$?" -ne 2 ] \
+  || [[ "$output" != *"list does not accept --name"* ]]; then
+  option_scope_ok=false
+fi
+if output=$($SNAPDIFF prune --name ignored 2>&1) || [ "$?" -ne 2 ] \
+  || [[ "$output" != *"prune does not accept --name"* ]]; then
+  option_scope_ok=false
+fi
+if output=$($SNAPDIFF verify --all --name ignored 2>&1) || [ "$?" -ne 2 ] \
+  || [[ "$output" != *"verify accepts either --name or --all, not both"* ]]; then
+  option_scope_ok=false
+fi
+
+if [ "$option_scope_ok" = true ]; then
+  pass "unsupported and ambiguous options exit 2"
+else
+  fail "command-specific option enforcement"
+fi
+
+# Test 18: replay relative sources from their capture working directory
+echo ""
+echo "--- Test 18: stable capture execution context ---"
 PROJECT_DIR="$TEST_DIR/context-project"
 OTHER_DIR="$TEST_DIR/context-other"
 mkdir -p "$PROJECT_DIR" "$OTHER_DIR"
