@@ -238,16 +238,18 @@ COMMANDS:
   update   Accept current output as new baseline
   prune    Remove unused snapshot files
 
-OPTIONS:
-  --name <name>      Snapshot name (letters, numbers, dots, underscores, hyphens)
-  --from <cmd|file>  Capture source, or replacement source for update
-  --cmd <command>    Command to execute (with --from cmd)
-  --file <path>      File to read (with --from file)
-  --mode <mode>      Comparison mode: exact, normalize, json-equiv (default: exact)
-  --all              Verify all snapshots
+GLOBAL OPTIONS:
   --no-color         Disable color output
   --base-dir <dir>   Base directory for snapshots (default: .)
   -h, --help         Show this help
+
+COMMAND OPTIONS:
+  capture  --name, --from, --cmd/--file, --mode
+  verify   exactly one of --name or --all
+  diff     --name
+  update   --name; optional --from with --cmd/--file
+  list     no command-specific options
+  prune    no command-specific options
 
 EXAMPLES:
   snapdiff capture --from cmd --cmd "mytool --input fixture.json" --name mytool-output
