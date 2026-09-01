@@ -16,7 +16,7 @@ export async function handleDiff(args: CliArgs): Promise<void> {
   let actual: string;
 
   if (meta.command) {
-    actual = await captureFromCommand(meta.command, meta.sourceCwd);
+    actual = await captureFromCommand(meta.command, meta.sourceCwd, args.timeoutMs ?? meta.producerTimeoutMs);
   } else if (meta.sourceFile) {
     actual = await captureFromFile(meta.sourceFile, meta.sourceCwd);
   } else {

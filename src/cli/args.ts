@@ -15,18 +15,19 @@ export interface CliArgs {
   all?: boolean;
   color?: boolean;
   baseDir?: string;
+  timeoutMs?: number;
 }
 
-const VALUE_OPTIONS = new Set(['--name', '--from', '--cmd', '--file', '--mode', '--base-dir']);
+const VALUE_OPTIONS = new Set(['--name', '--from', '--cmd', '--file', '--mode', '--base-dir', '--timeout-ms']);
 const FLAG_OPTIONS = new Set(['--all', '--no-color', '--help', '-h']);
 const VALID_MODES = ['exact', 'normalize', 'json-equiv'] as const;
 const GLOBAL_OPTION_KEYS = new Set<keyof CliArgs>(['baseDir', 'color']);
 const COMMAND_OPTION_KEYS: Record<string, ReadonlySet<keyof CliArgs>> = {
-  capture: new Set(['name', 'from', 'cmd', 'file', 'mode']),
-  verify: new Set(['name', 'all']),
-  diff: new Set(['name']),
+  capture: new Set(['name', 'from', 'cmd', 'file', 'mode', 'timeoutMs']),
+  verify: new Set(['name', 'all', 'timeoutMs']),
+  diff: new Set(['name', 'timeoutMs']),
   list: new Set(),
-  update: new Set(['name', 'from', 'cmd', 'file']),
+  update: new Set(['name', 'from', 'cmd', 'file', 'timeoutMs']),
   prune: new Set(),
 };
 const OPTION_LABELS: Partial<Record<keyof CliArgs, string>> = {
@@ -38,6 +39,7 @@ const OPTION_LABELS: Partial<Record<keyof CliArgs, string>> = {
   all: '--all',
   color: '--no-color',
   baseDir: '--base-dir',
+  timeoutMs: '--timeout-ms',
 };
 
 function requireOptionValue(args: string[], index: number, option: string): string {
@@ -110,6 +112,17 @@ export function parseArgs(argv: string[]): CliArgs {
         parsed.baseDir = requireOptionValue(args, i, arg);
         i++;
         break;
+      case '--timeout-ms': {
+        const value = requireOptionValue(args, i, arg);
+        const timeoutMs = Number(value);
+        if (!Number.isFinite(timeoutMs) || !Number.isInteger(timeoutMs) || timeoutMs <= 0) {
+          console.error(`Invalid value for --timeout-ms: ${value} (expected a positive integer)`);
+          process.exit(2);
+        }
+        parsed.timeoutMs = timeoutMs;
+        i++;
+        break;
+      }
       case '--help':
       case '-h':
         printHelp();
@@ -241,6 +254,7 @@ COMMANDS:
 GLOBAL OPTIONS:
   --no-color         Disable color output
   --base-dir <dir>   Base directory for snapshots (default: .)
+  --timeout-ms <ms>  Producer timeout (default: 30000; recorded for replay)
   -h, --help         Show this help
 
 COMMAND OPTIONS:

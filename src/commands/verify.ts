@@ -7,16 +7,16 @@ export async function handleVerify(args: CliArgs): Promise<void> {
   const color = args.color !== false;
 
   if (args.all) {
-    await verifyAll(args.baseDir, color);
+    await verifyAll(args.baseDir, color, args.timeoutMs);
     return;
   }
 
   const name = args.name!;
-  const result = await verifySingle(name, args.baseDir, color);
+  const result = await verifySingle(name, args.baseDir, color, args.timeoutMs);
   process.exit(result ? 0 : 1);
 }
 
-async function verifySingle(name: string, baseDir: string = '.', color: boolean): Promise<boolean> {
+async function verifySingle(name: string, baseDir: string = '.', color: boolean, timeoutMs?: number): Promise<boolean> {
   if (!(await snapshotExists(name, baseDir))) {
     console.error(`Snapshot not found: ${name}`);
     process.exit(2);
@@ -26,7 +26,7 @@ async function verifySingle(name: string, baseDir: string = '.', color: boolean)
   let actual: string;
 
   if (meta.command) {
-    actual = await captureFromCommand(meta.command, meta.sourceCwd);
+    actual = await captureFromCommand(meta.command, meta.sourceCwd, timeoutMs ?? meta.producerTimeoutMs);
   } else if (meta.sourceFile) {
     actual = await captureFromFile(meta.sourceFile, meta.sourceCwd);
   } else {
@@ -47,7 +47,7 @@ async function verifySingle(name: string, baseDir: string = '.', color: boolean)
   }
 }
 
-async function verifyAll(baseDir: string = '.', color: boolean): Promise<void> {
+async function verifyAll(baseDir: string = '.', color: boolean, timeoutMs?: number): Promise<void> {
   const snapshots = await listSnapshots(baseDir);
 
   if (snapshots.length === 0) {
@@ -63,7 +63,7 @@ async function verifyAll(baseDir: string = '.', color: boolean): Promise<void> {
 
     try {
       if (info.meta.command) {
-      actual = await captureFromCommand(info.meta.command, info.meta.sourceCwd);
+      actual = await captureFromCommand(info.meta.command, info.meta.sourceCwd, timeoutMs ?? info.meta.producerTimeoutMs);
       } else if (info.meta.sourceFile) {
       actual = await captureFromFile(info.meta.sourceFile, info.meta.sourceCwd);
       } else {

@@ -8,6 +8,7 @@ export interface SnapshotMeta {
   command?: string;
   sourceFile?: string;
   sourceCwd?: string;
+  producerTimeoutMs?: number;
   contentHash: string;
   size: number;
 }
@@ -87,6 +88,10 @@ function validateMetadata(name: string, value: unknown): SnapshotMeta {
   if (meta.command !== undefined && meta.sourceFile !== undefined) {
     throw corruption(name, 'metadata must not define both command and sourceFile');
   }
+  if (meta.producerTimeoutMs !== undefined &&
+      (!Number.isSafeInteger(meta.producerTimeoutMs) || (meta.producerTimeoutMs as number) <= 0)) {
+    throw corruption(name, 'metadata producerTimeoutMs must be a positive integer when present');
+  }
   if (typeof meta.contentHash !== 'string' || !/^-?[0-9a-f]+$/.test(meta.contentHash)) {
     throw corruption(name, 'metadata contentHash must be a hexadecimal string');
   }
@@ -113,7 +118,8 @@ export async function saveSnapshot(
   baseDir: string = '.',
   command?: string,
   sourceFile?: string,
-  sourceCwd?: string
+  sourceCwd?: string,
+  producerTimeoutMs?: number
 ): Promise<{ snapPath: string; metaPath: string }> {
   await ensureSnapshotDir(baseDir);
 
@@ -129,6 +135,7 @@ export async function saveSnapshot(
     command,
     sourceFile,
     sourceCwd,
+    producerTimeoutMs,
     contentHash: computeHash(content),
     size: content.length,
   };
@@ -220,23 +227,27 @@ export async function listSnapshots(baseDir: string = '.'): Promise<SnapshotInfo
 
 export async function captureFromCommand(
   cmd: string,
-  cwd?: string
+  cwd?: string,
+  timeoutMs: number = 30_000
 ): Promise<string> {
   const { exec } = await import('node:child_process');
   const { promisify } = await import('node:util');
   const execAsync = promisify(exec);
 
   try {
-    const { stdout } = await execAsync(cmd, { cwd, maxBuffer: 50 * 1024 * 1024 });
+    const { stdout } = await execAsync(cmd, { cwd, timeout: timeoutMs, killSignal: 'SIGTERM', maxBuffer: 50 * 1024 * 1024 });
     return stdout;
   } catch (err) {
     const details = err && typeof err === 'object'
-      ? err as { code?: string | number; stderr?: string; message?: string }
+      ? err as { code?: string | number; stderr?: string; message?: string; killed?: boolean; signal?: string }
       : undefined;
     const exitContext = details?.code !== undefined ? ` (exit code ${details.code})` : '';
     const stderr = details?.stderr?.trim();
     const reason = stderr || details?.message || String(err);
-    throw new Error(`Command failed${exitContext}: ${cmd}\n${reason}`);
+    const timeoutContext = details?.killed || details?.signal === 'SIGTERM'
+      ? ` timed out after ${timeoutMs} ms`
+      : '';
+    throw new Error(`Command failed${exitContext}${timeoutContext}: ${cmd}\n${reason}`);
   }
 }
 
