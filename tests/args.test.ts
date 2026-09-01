@@ -93,12 +93,31 @@ describe('parseArgs', () => {
     expect(args.baseDir).toBe('/tmp');
   });
 
+  it('parses a positive producer timeout', () => {
+    const args = parseArgs(['node', 'snapdiff', 'verify', '--all', '--timeout-ms', '250']);
+    expect(args.timeoutMs).toBe(250);
+  });
+
+  it.each(['0', '-1', '1.5', 'forever'])('rejects invalid producer timeout %s', (value) => {
+    const exitSpy = vi.spyOn(process, 'exit').mockImplementation((() => {
+      throw new Error('process.exit called');
+    }) as (code?: number) => never);
+    const errorSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
+    expect(() => parseArgs(['node', 'snapdiff', 'verify', '--all', '--timeout-ms', value]))
+      .toThrow('process.exit called');
+    expect(errorSpy).toHaveBeenCalledWith(
+      `Invalid value for --timeout-ms: ${value} (expected a positive integer)`
+    );
+    expect(exitSpy).toHaveBeenCalledWith(2);
+  });
+
   it.each([
     ['list', ['--name', 'ignored'], '--name'],
     ['prune', ['--name', 'ignored'], '--name'],
     ['verify', ['--mode', 'exact', '--name', 'test'], '--mode'],
     ['diff', ['--all', '--name', 'test'], '--all'],
     ['update', ['--mode', 'normalize', '--name', 'test'], '--mode'],
+    ['list', ['--timeout-ms', '100'], '--timeout-ms'],
   ])('rejects %s with unsupported option %s', (command, options, unsupported) => {
     const exitSpy = vi.spyOn(process, 'exit').mockImplementation((() => {
       throw new Error('process.exit called');
@@ -139,7 +158,7 @@ describe('parseArgs', () => {
     expect(exitSpy).toHaveBeenCalledWith(2);
   });
 
-  it.each(['--name', '--from', '--cmd', '--file', '--mode', '--base-dir'])(
+  it.each(['--name', '--from', '--cmd', '--file', '--mode', '--base-dir', '--timeout-ms'])(
     'exits with code 2 when %s has no value',
     (option) => {
       const exitSpy = vi.spyOn(process, 'exit').mockImplementation((() => {
