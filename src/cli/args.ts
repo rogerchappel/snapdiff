@@ -254,14 +254,16 @@ COMMANDS:
 GLOBAL OPTIONS:
   --no-color         Disable color output
   --base-dir <dir>   Base directory for snapshots (default: .)
-  --timeout-ms <ms>  Producer timeout (default: 30000; recorded for replay)
   -h, --help         Show this help
 
+PRODUCER OPTION (capture, verify, diff, update):
+  --timeout-ms <ms>  Positive timeout (default: 30000; recorded for replay)
+
 COMMAND OPTIONS:
-  capture  --name, --from, --cmd/--file, --mode
-  verify   exactly one of --name or --all
-  diff     --name
-  update   --name; optional --from with --cmd/--file
+  capture  --name, --from, --cmd/--file, --mode, --timeout-ms
+  verify   exactly one of --name or --all; optional --timeout-ms
+  diff     --name; optional --timeout-ms
+  update   --name; optional --from with --cmd/--file and --timeout-ms
   list     no command-specific options
   prune    no command-specific options
 
