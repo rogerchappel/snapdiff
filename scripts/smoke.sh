@@ -193,7 +193,7 @@ fi
 echo ""
 echo "--- Test 16: reject missing option values ---"
 missing_values_rejected=true
-value_options=(--name --from --cmd --file --mode --base-dir)
+value_options=(--name --from --cmd --file --mode --base-dir --timeout-ms)
 
 for option in "${value_options[@]}"; do
   if $SNAPDIFF list "$option" >/dev/null 2>&1 || [ "$?" -ne 2 ]; then
@@ -266,6 +266,28 @@ if [ "$context_ok" = true ]; then
   pass "relative file and command sources replay after changing cwd"
 else
   fail "stable capture execution context"
+fi
+
+# Test 19: command producers honor positive timeout bounds
+echo ""
+echo "--- Test 19: bounded producer execution ---"
+timeout_ok=true
+if ! $SNAPDIFF capture --from cmd --cmd "node -e \"process.stdout.write('quick')\"" \
+  --name quick-command --timeout-ms 1000 --base-dir "$TEST_DIR" >/dev/null 2>&1; then
+  timeout_ok=false
+fi
+if output=$($SNAPDIFF capture --from cmd --cmd "node -e \"setTimeout(() => {}, 10000)\"" \
+  --name hanging-command --timeout-ms 100 --base-dir "$TEST_DIR" 2>&1) \
+  || [[ "$output" != *"timed out after 100 ms"* ]] \
+  || [ -e "$TEST_DIR/snapshots/hanging-command.snap" ] \
+  || [ -e "$TEST_DIR/snapshots/hanging-command.meta.json" ]; then
+  timeout_ok=false
+fi
+
+if [ "$timeout_ok" = true ]; then
+  pass "producer timeout terminates cleanly while fast commands succeed"
+else
+  fail "bounded producer execution"
 fi
 
 echo ""

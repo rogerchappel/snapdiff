@@ -7,7 +7,7 @@ export async function handleCapture(args: CliArgs): Promise<void> {
 
   if (args.from === 'cmd' && args.cmd) {
     console.log(`Executing: ${args.cmd}`);
-    content = await captureFromCommand(args.cmd);
+    content = await captureFromCommand(args.cmd, undefined, args.timeoutMs);
   } else if (args.from === 'file' && args.file) {
     console.log(`Reading file: ${args.file}`);
     content = await captureFromFile(args.file);
@@ -23,7 +23,8 @@ export async function handleCapture(args: CliArgs): Promise<void> {
     args.baseDir,
     args.cmd,
     args.file,
-    process.cwd()
+    process.cwd(),
+    args.cmd ? (args.timeoutMs ?? 30_000) : undefined
   );
 
   const lines = content.split('\n').length;

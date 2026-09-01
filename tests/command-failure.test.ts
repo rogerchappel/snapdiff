@@ -4,6 +4,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { handleCapture } from '../src/commands/capture.js';
 import { handleUpdate } from '../src/commands/update.js';
 import { handleVerify } from '../src/commands/verify.js';
+import { handleDiff } from '../src/commands/diff.js';
 import { handlePrune } from '../src/commands/prune.js';
 import { saveSnapshot } from '../src/core/snapshot.js';
 import type { CliArgs } from '../src/cli/args.js';
@@ -65,6 +66,45 @@ describe('failed producer commands', () => {
     await expect(handleUpdate(args({ command: 'update', name: 'existing' }))).rejects.toThrow('exit code 7');
     expect(await fs.readFile(snapPath, 'utf8')).toBe(beforeSnap);
     expect(await fs.readFile(metaPath, 'utf8')).toBe(beforeMeta);
+  });
+});
+
+describe('producer timeouts', () => {
+  const slow = `node -e "setTimeout(() => process.stdout.write('late'), 10000)"`;
+
+  it('terminates capture within the configured bound without creating a baseline', async () => {
+    const started = Date.now();
+    await expect(handleCapture(args({ command: 'capture', name: 'timed', from: 'cmd', cmd: slow, timeoutMs: 100 })))
+      .rejects.toThrow(/timed out after 100 ms[\s\S]*node -e/);
+    expect(Date.now() - started).toBeLessThan(3000);
+    await expect(fs.access(join(TEST_DIR, 'snapshots', 'timed.snap'))).rejects.toThrow();
+  });
+
+  it('persists the capture timeout and reuses it for verify and diff', async () => {
+    await handleCapture(args({ command: 'capture', name: 'fast', from: 'cmd',
+      cmd: `node -e "process.stdout.write('ok')"`, timeoutMs: 500 }));
+    const metadata = JSON.parse(await fs.readFile(join(TEST_DIR, 'snapshots', 'fast.meta.json'), 'utf8'));
+    expect(metadata.producerTimeoutMs).toBe(500);
+    vi.spyOn(process, 'exit').mockImplementation(((code?: number) => { throw new Error(`exit:${code}`); }) as never);
+    await expect(handleVerify(args({ name: 'fast' }))).rejects.toThrow('exit:0');
+    await handleDiff(args({ command: 'diff', name: 'fast' }));
+  });
+
+  it('does not overwrite a baseline when update times out', async () => {
+    await saveSnapshot('existing', 'stable', 'exact', TEST_DIR, slow, undefined, process.cwd(), 100);
+    const snapPath = join(TEST_DIR, 'snapshots', 'existing.snap');
+    const metaPath = join(TEST_DIR, 'snapshots', 'existing.meta.json');
+    const before = await Promise.all([fs.readFile(snapPath, 'utf8'), fs.readFile(metaPath, 'utf8')]);
+    await expect(handleUpdate(args({ command: 'update', name: 'existing' }))).rejects.toThrow('timed out after 100 ms');
+    await expect(Promise.all([fs.readFile(snapPath, 'utf8'), fs.readFile(metaPath, 'utf8')])).resolves.toEqual(before);
+  });
+
+  it('counts a timed-out producer as failed in verify --all', async () => {
+    await saveSnapshot('timed', 'late', 'exact', TEST_DIR, slow, undefined, process.cwd(), 100);
+    const output = vi.spyOn(console, 'log').mockImplementation(() => undefined);
+    vi.spyOn(process, 'exit').mockImplementation(((code?: number) => { throw new Error(`exit:${code}`); }) as never);
+    await expect(handleVerify(args({ all: true }))).rejects.toThrow('exit:1');
+    expect(output.mock.calls.flat().join('\n')).toMatch(/timed[\s\S]*timed out after 100 ms[\s\S]*0 passed, 1 failed/);
   });
 });
 

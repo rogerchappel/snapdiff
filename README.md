@@ -76,6 +76,12 @@ All commands accept `--base-dir <dir>` to select the project root and
 `--no-color` to disable colored output. Other options are command-specific;
 unsupported combinations are usage errors (exit code `2`).
 
+Command-backed `capture`, `verify`, `diff`, and `update` also accept
+`--timeout-ms <positive-integer>`. Producers are terminated after 30,000 ms by
+default. A capture records its effective timeout in snapshot metadata; later
+replays use that value unless a new `--timeout-ms` override is supplied. An
+update keeps the recorded timeout unless explicitly overridden.
+
 ### `snapdiff capture`
 
 Capture output from a command or file.
@@ -151,7 +157,9 @@ Command-backed `capture`, `diff`, `verify`, and `update` operations require the
 recorded command to exit successfully. Output from a non-zero command is never
 treated as a match or accepted as a baseline. In particular, failed `capture`
 and `update` operations do not create or overwrite snapshot files, and their
-diagnostics include the exit code and command stderr when available.
+diagnostics include the exit code and command stderr when available. A timed-out
+producer likewise exits nonzero, reports the command and timeout, and never
+creates or overwrites a baseline.
 
 ### `snapdiff prune`
 

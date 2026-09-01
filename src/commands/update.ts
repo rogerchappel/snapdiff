@@ -16,7 +16,7 @@ export async function handleUpdate(args: CliArgs): Promise<void> {
   let actual: string;
 
   if (command) {
-    actual = await captureFromCommand(command, sourceCwd);
+    actual = await captureFromCommand(command, sourceCwd, args.timeoutMs ?? meta.producerTimeoutMs);
   } else if (sourceFile) {
     actual = await captureFromFile(sourceFile, sourceCwd);
   } else {
@@ -24,7 +24,8 @@ export async function handleUpdate(args: CliArgs): Promise<void> {
     process.exit(2);
   }
 
-  await saveSnapshot(name, actual, meta.mode, args.baseDir, command, sourceFile, sourceCwd);
+  await saveSnapshot(name, actual, meta.mode, args.baseDir, command, sourceFile, sourceCwd,
+    command ? (args.timeoutMs ?? meta.producerTimeoutMs ?? 30_000) : undefined);
 
   const bytes = Buffer.byteLength(actual, 'utf-8');
   const lines = actual.split('\n').length;
