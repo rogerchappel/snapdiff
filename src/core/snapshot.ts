@@ -21,6 +21,8 @@ export interface SnapshotInfo {
   meta: SnapshotMeta;
 }
 
+type StoredSnapshotMeta = Omit<SnapshotMeta, 'sizeUnit'> & { sizeUnit?: 'bytes' };
+
 const SNAPSHOTS_DIR = 'snapshots';
 const SNAPSHOT_NAME_PATTERN = /^[A-Za-z0-9][A-Za-z0-9._-]*$/;
 const SNAPSHOT_MODES = new Set(['exact', 'normalize', 'json-equiv']);
@@ -65,7 +67,7 @@ function corruption(name: string, detail: string): Error {
   return new Error(`Snapshot "${name}" is corrupted: ${detail}. Re-capture or restore the snapshot pair.`);
 }
 
-function validateMetadata(name: string, value: unknown): SnapshotMeta {
+function validateMetadata(name: string, value: unknown): StoredSnapshotMeta {
   if (!value || typeof value !== 'object' || Array.isArray(value)) {
     throw corruption(name, 'metadata must be a JSON object');
   }
@@ -102,10 +104,10 @@ function validateMetadata(name: string, value: unknown): SnapshotMeta {
   if (meta.sizeUnit !== undefined && meta.sizeUnit !== 'bytes') {
     throw corruption(name, 'metadata sizeUnit must be bytes when present');
   }
-  return meta as unknown as SnapshotMeta;
+  return meta as unknown as StoredSnapshotMeta;
 }
 
-function verifyContent(name: string, content: string, meta: SnapshotMeta): void {
+function verifyContent(name: string, content: string, meta: StoredSnapshotMeta): void {
   const actualSize = meta.sizeUnit === 'bytes' ? Buffer.byteLength(content) : content.length;
   const unit = meta.sizeUnit === 'bytes' ? 'bytes' : 'legacy UTF-16 code units';
   if (meta.size !== actualSize) {
@@ -172,9 +174,11 @@ export async function loadSnapshot(
 
   return {
     content,
-    meta: meta.sizeUnit === 'bytes'
-      ? meta
-      : { ...meta, size: Buffer.byteLength(content), sizeUnit: 'bytes' },
+    meta: {
+      ...meta,
+      size: meta.sizeUnit === 'bytes' ? meta.size : Buffer.byteLength(content),
+      sizeUnit: 'bytes',
+    },
   };
 }
 
