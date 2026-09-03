@@ -32,6 +32,25 @@ describe('update source overrides', () => {
     expect(updated.meta.command).toBeUndefined();
   });
 
+  it('rewrites legacy size metadata as UTF-8 bytes when updating', async () => {
+    const oldFile = join(TEST_DIR, 'old.txt');
+    const newFile = join(TEST_DIR, 'new.txt');
+    await fs.mkdir(TEST_DIR, { recursive: true });
+    await fs.writeFile(oldFile, '😀');
+    await fs.writeFile(newFile, '🚀');
+    const { metaPath } = await saveSnapshot('unicode', '😀', 'exact', TEST_DIR, undefined, oldFile);
+    const legacyMeta = JSON.parse(await fs.readFile(metaPath, 'utf8'));
+    delete legacyMeta.sizeUnit;
+    legacyMeta.size = 2;
+    await fs.writeFile(metaPath, JSON.stringify(legacyMeta));
+
+    await handleUpdate({ command: 'update', name: 'unicode', from: 'file', file: newFile, baseDir: TEST_DIR });
+
+    const persisted = JSON.parse(await fs.readFile(metaPath, 'utf8'));
+    expect(persisted).toMatchObject({ size: 4, sizeUnit: 'bytes' });
+    expect((await loadSnapshot('unicode', TEST_DIR)).content).toBe('🚀');
+  });
+
   it('uses and persists a replacement command source', async () => {
     await saveSnapshot('sample', 'old', 'exact', TEST_DIR, undefined, 'old.txt');
     const command = `node -e "process.stdout.write('new')"`;
