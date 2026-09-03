@@ -11,6 +11,7 @@ export interface SnapshotMeta {
   producerTimeoutMs?: number;
   contentHash: string;
   size: number;
+  sizeUnit: 'bytes';
 }
 
 export interface SnapshotInfo {
@@ -98,12 +99,17 @@ function validateMetadata(name: string, value: unknown): SnapshotMeta {
   if (!Number.isSafeInteger(meta.size) || (meta.size as number) < 0) {
     throw corruption(name, 'metadata size must be a non-negative integer');
   }
+  if (meta.sizeUnit !== undefined && meta.sizeUnit !== 'bytes') {
+    throw corruption(name, 'metadata sizeUnit must be bytes when present');
+  }
   return meta as unknown as SnapshotMeta;
 }
 
 function verifyContent(name: string, content: string, meta: SnapshotMeta): void {
-  if (meta.size !== content.length) {
-    throw corruption(name, `stored size is ${meta.size}, but the snapshot contains ${content.length} characters`);
+  const actualSize = meta.sizeUnit === 'bytes' ? Buffer.byteLength(content) : content.length;
+  const unit = meta.sizeUnit === 'bytes' ? 'bytes' : 'legacy UTF-16 code units';
+  if (meta.size !== actualSize) {
+    throw corruption(name, `stored size is ${meta.size}, but the snapshot contains ${actualSize} ${unit}`);
   }
   const actualHash = computeHash(content);
   if (meta.contentHash !== actualHash) {
@@ -137,7 +143,8 @@ export async function saveSnapshot(
     sourceCwd,
     producerTimeoutMs,
     contentHash: computeHash(content),
-    size: content.length,
+    size: Buffer.byteLength(content),
+    sizeUnit: 'bytes',
   };
 
   await fs.writeFile(metaPath, JSON.stringify(meta, null, 2) + '\n', 'utf-8');
@@ -163,7 +170,12 @@ export async function loadSnapshot(
   const meta = validateMetadata(name, parsed);
   verifyContent(name, content, meta);
 
-  return { content, meta };
+  return {
+    content,
+    meta: meta.sizeUnit === 'bytes'
+      ? meta
+      : { ...meta, size: Buffer.byteLength(content), sizeUnit: 'bytes' },
+  };
 }
 
 export async function snapshotExists(name: string, baseDir: string = '.'): Promise<boolean> {
