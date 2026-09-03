@@ -177,7 +177,7 @@ snapdiff prune
 Snapshots live in a `snapshots/` directory at your project root (or wherever `--base-dir` points). Each snapshot produces two files:
 
 - `snapshots/<name>.snap` — The raw expected output
-- `snapshots/<name>.meta.json` — Metadata: capture timestamp, comparison mode, source command/file, content hash
+- `snapshots/<name>.meta.json` — Metadata: capture timestamp, comparison mode, source command/file, content hash, and size
 
 Relative `--file` paths and `--cmd` commands are replayed from the working
 directory where the snapshot was captured. This execution directory is stored
@@ -185,6 +185,12 @@ in new snapshot metadata, so `verify`, `diff`, `update`, and `verify --all`
 behave consistently when invoked from another directory with the same absolute
 `--base-dir`. Older metadata without an execution directory keeps the legacy
 behavior of resolving sources from the current working directory.
+
+New metadata records `size` in UTF-8 bytes and includes `"sizeUnit": "bytes"`.
+For compatibility, metadata created by older SnapDiff releases without
+`sizeUnit` is validated using its original UTF-16 code-unit count, then exposed
+by `list` and the loading API as a UTF-8 byte count. Updating a legacy snapshot
+rewrites its metadata in the byte-based format.
 
 SnapDiff validates each pair before listing, verifying, or updating it. The
 metadata name, mode, timestamp, source fields, size, and content hash must be
