@@ -109,6 +109,39 @@ describe('producer timeouts', () => {
 });
 
 describe('invalid snapshot storage', () => {
+  it('treats a missing snapshots directory as a successful prune no-op', async () => {
+    const output = vi.spyOn(console, 'log').mockImplementation(() => undefined);
+
+    await handlePrune(args({ command: 'prune' }));
+
+    expect(output).toHaveBeenCalledWith('No snapshots directory found.');
+  });
+
+  it('rejects a snapshots path that is not a directory', async () => {
+    await fs.mkdir(TEST_DIR, { recursive: true });
+    await fs.writeFile(join(TEST_DIR, 'snapshots'), 'not a directory');
+
+    await expect(handlePrune(args({ command: 'prune' })))
+      .rejects.toThrow(/Cannot read snapshots directory.*ENOTDIR/);
+  });
+
+  it('surfaces a snapshot deletion failure', async () => {
+    const dir = join(TEST_DIR, 'snapshots');
+    await fs.mkdir(dir, { recursive: true });
+    const orphan = join(dir, 'orphan.snap');
+    await fs.writeFile(orphan, 'expected');
+    const unlink = vi.spyOn(fs, 'unlink').mockImplementation(async (path) => {
+      if (path === orphan) {
+        throw Object.assign(new Error('injected deletion failure'), { code: 'EACCES' });
+      }
+      return undefined;
+    });
+
+    await expect(handlePrune(args({ command: 'prune' })))
+      .rejects.toThrow(/Cannot delete snapshot "orphan".*injected deletion failure/);
+    expect(unlink).toHaveBeenCalledWith(orphan);
+  });
+
   it('makes verify --all fail with a named malformed metadata error', async () => {
     const dir = join(TEST_DIR, 'snapshots');
     await fs.mkdir(dir, { recursive: true });
