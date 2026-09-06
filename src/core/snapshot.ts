@@ -198,14 +198,14 @@ export async function deleteSnapshot(name: string, baseDir: string = '.'): Promi
 
   try {
     await fs.unlink(snapPath);
-  } catch {
-    // ignore if doesn't exist
+  } catch (err) {
+    if ((err as NodeJS.ErrnoException).code !== 'ENOENT') throw err;
   }
 
   try {
     await fs.unlink(metaPath);
-  } catch {
-    // ignore if doesn't exist
+  } catch (err) {
+    if ((err as NodeJS.ErrnoException).code !== 'ENOENT') throw err;
   }
 }
 
