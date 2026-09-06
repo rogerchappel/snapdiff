@@ -37,8 +37,8 @@ export async function handlePrune(args: CliArgs): Promise<void> {
   }
 
   if (pruned === 0) {
-    console.log('No incomplete snapshots found.');
+    console.log('No orphaned snapshots found.');
   } else {
-    console.log(`\nPruned ${pruned} incomplete snapshot(s).`);
+    console.log(`\nPruned ${pruned} orphaned snapshot(s).`);
   }
 }
