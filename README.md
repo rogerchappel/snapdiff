@@ -166,7 +166,9 @@ creates or overwrites a baseline.
 Remove incomplete snapshot pairs: a `.snap` without matching `.meta.json`, or
 a `.meta.json` without matching `.snap`. Complete pairs with malformed metadata
 are retained for manual repair; `list` and `verify --all` report them by name.
-`prune` has no command-specific options.
+`prune` has no command-specific options. A missing `snapshots/` directory is a
+successful no-op. Other read or deletion failures are reported and exit
+nonzero, so automation never mistakes a failed cleanup for success.
 
 ```bash
 snapdiff prune
