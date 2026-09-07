@@ -181,6 +181,12 @@ Snapshots live in a `snapshots/` directory at your project root (or wherever `--
 - `snapshots/<name>.snap` — The raw expected output
 - `snapshots/<name>.meta.json` — Metadata: capture timestamp, comparison mode, source command/file, content hash, and size
 
+SnapDiff stages both files before publishing them. If either file cannot be
+written or published, a previously valid pair is restored and temporary files
+are removed; a successful `capture` or `update` therefore leaves matching
+content and metadata. Storage failures name the failed operation and exit
+non-zero.
+
 Relative `--file` paths and `--cmd` commands are replayed from the working
 directory where the snapshot was captured. This execution directory is stored
 in new snapshot metadata, so `verify`, `diff`, `update`, and `verify --all`
