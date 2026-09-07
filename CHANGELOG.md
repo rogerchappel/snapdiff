@@ -17,6 +17,8 @@ format and uses semantic versioning when versioned releases are published.
 
 - Publish as `@rogerchappel/snapdiff` while retaining `snapdiff` as the CLI
   command. The unscoped npm package belongs to an unrelated project.
+- Publish snapshot content and metadata as a recoverable pair so a failed
+  capture or update preserves the previous valid baseline.
 
 ### Security
 
