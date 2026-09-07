@@ -38,6 +38,32 @@ describe('saveSnapshot', () => {
     expect(loaded.meta).toMatchObject({ size: 4, sizeUnit: 'bytes' });
   });
 
+  it('preserves the previous pair when publishing metadata fails', async () => {
+    await saveSnapshot('atomic', 'old content', 'exact', TEST_DIR, undefined, 'old.txt');
+    const realRename = fs.rename.bind(fs);
+    const rename = vi.spyOn(fs, 'rename');
+    let failed = false;
+    rename.mockImplementation(async (from, to) => {
+      if (!failed && String(from).includes('.meta.json.tmp-') && String(to).endsWith('.meta.json')) {
+        failed = true;
+        throw new Error('injected metadata publish failure');
+      }
+      return realRename(from, to);
+    });
+
+    await expect(
+      saveSnapshot('atomic', 'new content', 'normalize', TEST_DIR, undefined, 'new.txt')
+    ).rejects.toThrow(/Cannot publish snapshot metadata.*injected metadata publish failure/);
+
+    const loaded = await loadSnapshot('atomic', TEST_DIR);
+    expect(loaded.content).toBe('old content');
+    expect(loaded.meta).toMatchObject({ mode: 'exact', sourceFile: 'old.txt' });
+    expect(await fs.readdir(join(TEST_DIR, 'snapshots'))).toEqual([
+      'atomic.meta.json',
+      'atomic.snap',
+    ]);
+  });
+
   it('records command metadata', async () => {
     const { metaPath } = await saveSnapshot('cmd-snap', 'output', 'exact', TEST_DIR, 'echo test', undefined);
     const meta = JSON.parse(await fs.readFile(metaPath, 'utf-8'));
