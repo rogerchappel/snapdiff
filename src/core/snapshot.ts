@@ -1,4 +1,5 @@
 import { promises as fs } from 'node:fs';
+import { randomUUID } from 'node:crypto';
 import { isAbsolute, join, resolve } from 'node:path';
 
 export interface SnapshotMeta {
@@ -119,6 +120,28 @@ function verifyContent(name: string, content: string, meta: StoredSnapshotMeta):
   }
 }
 
+async function removeIfPresent(path: string): Promise<void> {
+  try {
+    await fs.unlink(path);
+  } catch (err) {
+    if ((err as NodeJS.ErrnoException).code !== 'ENOENT') throw err;
+  }
+}
+
+async function moveIfPresent(from: string, to: string): Promise<boolean> {
+  try {
+    await fs.rename(from, to);
+    return true;
+  } catch (err) {
+    if ((err as NodeJS.ErrnoException).code === 'ENOENT') return false;
+    throw err;
+  }
+}
+
+function storageError(operation: string, err: unknown): Error {
+  return new Error(`Cannot ${operation}: ${err instanceof Error ? err.message : String(err)}`);
+}
+
 export async function saveSnapshot(
   name: string,
   content: string,
@@ -134,8 +157,6 @@ export async function saveSnapshot(
   const snapPath = getSnapPath(baseDir, name);
   const metaPath = getMetaPath(baseDir, name);
 
-  await fs.writeFile(snapPath, content, 'utf-8');
-
   const meta: SnapshotMeta = {
     name,
     captureTime: new Date().toISOString(),
@@ -149,7 +170,60 @@ export async function saveSnapshot(
     sizeUnit: 'bytes',
   };
 
-  await fs.writeFile(metaPath, JSON.stringify(meta, null, 2) + '\n', 'utf-8');
+  const transactionId = `${process.pid}-${randomUUID()}`;
+  const snapTempPath = `${snapPath}.tmp-${transactionId}`;
+  const metaTempPath = `${metaPath}.tmp-${transactionId}`;
+  const snapBackupPath = `${snapPath}.bak-${transactionId}`;
+  const metaBackupPath = `${metaPath}.bak-${transactionId}`;
+
+  try {
+    await fs.writeFile(snapTempPath, content, 'utf-8');
+  } catch (err) {
+    throw storageError('stage snapshot content', err);
+  }
+  try {
+    await fs.writeFile(metaTempPath, JSON.stringify(meta, null, 2) + '\n', 'utf-8');
+  } catch (err) {
+    await removeIfPresent(snapTempPath);
+    throw storageError('stage snapshot metadata', err);
+  }
+
+  let snapBackedUp = false;
+  let metaBackedUp = false;
+  let snapPublished = false;
+  let metaPublished = false;
+  let operation = 'prepare snapshot content';
+  try {
+    snapBackedUp = await moveIfPresent(snapPath, snapBackupPath);
+    operation = 'prepare snapshot metadata';
+    metaBackedUp = await moveIfPresent(metaPath, metaBackupPath);
+    operation = 'publish snapshot content';
+    await fs.rename(snapTempPath, snapPath);
+    snapPublished = true;
+    operation = 'publish snapshot metadata';
+    await fs.rename(metaTempPath, metaPath);
+    metaPublished = true;
+  } catch (err) {
+    try {
+      if (snapPublished) await removeIfPresent(snapPath);
+      if (metaPublished) await removeIfPresent(metaPath);
+      if (snapBackedUp) await fs.rename(snapBackupPath, snapPath);
+      if (metaBackedUp) await fs.rename(metaBackupPath, metaPath);
+    } catch (rollbackErr) {
+      throw storageError(`${operation}; rollback also failed`, rollbackErr);
+    } finally {
+      await Promise.allSettled([
+        removeIfPresent(snapTempPath),
+        removeIfPresent(metaTempPath),
+      ]);
+    }
+    throw storageError(operation, err);
+  }
+
+  await Promise.all([
+    removeIfPresent(snapBackupPath),
+    removeIfPresent(metaBackupPath),
+  ]);
 
   return { snapPath, metaPath };
 }
