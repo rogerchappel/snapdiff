@@ -106,11 +106,16 @@ describe('parseArgs', () => {
 
   it('rejects a producer timeout above the Node-safe maximum', () => {
     const value = String(MAX_PRODUCER_TIMEOUT_MS + 1);
+    const exitSpy = vi.spyOn(process, 'exit').mockImplementation((() => {
+      throw new Error('process.exit called');
+    }) as (code?: number) => never);
+    const errorSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
     expect(() => parseArgs(['node', 'snapdiff', 'verify', '--all', '--timeout-ms', value]))
       .toThrow('process.exit called');
-    expect(console.error).toHaveBeenCalledWith(
+    expect(errorSpy).toHaveBeenCalledWith(
       `Invalid value for --timeout-ms: ${value} (expected an integer from 1 to ${MAX_PRODUCER_TIMEOUT_MS})`
     );
+    expect(exitSpy).toHaveBeenCalledWith(2);
   });
 
   it.each(['0', '-1', '1.5', 'forever'])('rejects invalid producer timeout %s', (value) => {
@@ -121,7 +126,7 @@ describe('parseArgs', () => {
     expect(() => parseArgs(['node', 'snapdiff', 'verify', '--all', '--timeout-ms', value]))
       .toThrow('process.exit called');
     expect(errorSpy).toHaveBeenCalledWith(
-      `Invalid value for --timeout-ms: ${value} (expected a positive integer)`
+      `Invalid value for --timeout-ms: ${value} (expected an integer from 1 to ${MAX_PRODUCER_TIMEOUT_MS})`
     );
     expect(exitSpy).toHaveBeenCalledWith(2);
   });

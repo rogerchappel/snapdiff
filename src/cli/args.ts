@@ -3,7 +3,7 @@
  * Supports: capture, verify, diff, list, update, prune
  */
 
-import { assertValidSnapshotName } from '../core/snapshot.js';
+import { assertValidSnapshotName, isValidProducerTimeout, MAX_PRODUCER_TIMEOUT_MS } from '../core/snapshot.js';
 
 export interface CliArgs {
   command: string;
@@ -115,8 +115,8 @@ export function parseArgs(argv: string[]): CliArgs {
       case '--timeout-ms': {
         const value = requireOptionValue(args, i, arg);
         const timeoutMs = Number(value);
-        if (!Number.isFinite(timeoutMs) || !Number.isInteger(timeoutMs) || timeoutMs <= 0) {
-          console.error(`Invalid value for --timeout-ms: ${value} (expected a positive integer)`);
+        if (!isValidProducerTimeout(timeoutMs)) {
+          console.error(`Invalid value for --timeout-ms: ${value} (expected an integer from 1 to ${MAX_PRODUCER_TIMEOUT_MS})`);
           process.exit(2);
         }
         parsed.timeoutMs = timeoutMs;
@@ -257,7 +257,7 @@ GLOBAL OPTIONS:
   -h, --help         Show this help
 
 PRODUCER OPTION (capture, verify, diff, update):
-  --timeout-ms <ms>  Positive timeout (default: 30000; recorded for replay)
+  --timeout-ms <ms>  Timeout from 1 to ${MAX_PRODUCER_TIMEOUT_MS} (default: 30000; recorded for replay)
 
 COMMAND OPTIONS:
   capture  --name, --from, --cmd/--file, --mode, --timeout-ms
