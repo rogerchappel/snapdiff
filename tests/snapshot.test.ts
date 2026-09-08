@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
-import { saveSnapshot, loadSnapshot, snapshotExists, deleteSnapshot, listSnapshots } from '../src/core/snapshot.js';
+import { MAX_PRODUCER_TIMEOUT_MS, saveSnapshot, loadSnapshot, snapshotExists, deleteSnapshot, listSnapshots } from '../src/core/snapshot.js';
 import { handleList } from '../src/commands/list.js';
 import { promises as fs } from 'node:fs';
 import { join } from 'node:path';
@@ -100,6 +100,17 @@ describe('snapshot path safety', () => {
 });
 
 describe('loadSnapshot', () => {
+
+  it('rejects an oversized persisted producer timeout', async () => {
+    await saveSnapshot('oversized-timeout', 'stable', 'exact', TEST_DIR, 'echo stable');
+    const metaPath = join(TEST_DIR, 'snapshots', 'oversized-timeout.meta.json');
+    const meta = JSON.parse(await fs.readFile(metaPath, 'utf8'));
+    meta.producerTimeoutMs = MAX_PRODUCER_TIMEOUT_MS + 1;
+    await fs.writeFile(metaPath, JSON.stringify(meta));
+
+    await expect(loadSnapshot('oversized-timeout', TEST_DIR))
+      .rejects.toThrow(new RegExp(`producerTimeoutMs must be an integer from 1 to ${MAX_PRODUCER_TIMEOUT_MS}`));
+  });
   it('loads previously saved snapshot', async () => {
     await saveSnapshot('load-test', 'world', 'exact', TEST_DIR);
     const { content, meta } = await loadSnapshot('load-test', TEST_DIR);
