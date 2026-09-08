@@ -1,5 +1,6 @@
 import { describe, it, expect, vi, afterEach } from 'vitest';
 import { parseArgs } from '../src/cli/args.js';
+import { MAX_PRODUCER_TIMEOUT_MS } from '../src/core/snapshot.js';
 
 describe('parseArgs', () => {
   afterEach(() => {
@@ -96,6 +97,20 @@ describe('parseArgs', () => {
   it('parses a positive producer timeout', () => {
     const args = parseArgs(['node', 'snapdiff', 'verify', '--all', '--timeout-ms', '250']);
     expect(args.timeoutMs).toBe(250);
+  });
+
+  it('accepts the largest Node-safe producer timeout', () => {
+    const args = parseArgs(['node', 'snapdiff', 'verify', '--all', '--timeout-ms', String(MAX_PRODUCER_TIMEOUT_MS)]);
+    expect(args.timeoutMs).toBe(MAX_PRODUCER_TIMEOUT_MS);
+  });
+
+  it('rejects a producer timeout above the Node-safe maximum', () => {
+    const value = String(MAX_PRODUCER_TIMEOUT_MS + 1);
+    expect(() => parseArgs(['node', 'snapdiff', 'verify', '--all', '--timeout-ms', value]))
+      .toThrow('process.exit called');
+    expect(console.error).toHaveBeenCalledWith(
+      `Invalid value for --timeout-ms: ${value} (expected an integer from 1 to ${MAX_PRODUCER_TIMEOUT_MS})`
+    );
   });
 
   it.each(['0', '-1', '1.5', 'forever'])('rejects invalid producer timeout %s', (value) => {
