@@ -27,6 +27,13 @@ type StoredSnapshotMeta = Omit<SnapshotMeta, 'sizeUnit'> & { sizeUnit?: 'bytes' 
 const SNAPSHOTS_DIR = 'snapshots';
 const SNAPSHOT_NAME_PATTERN = /^[A-Za-z0-9][A-Za-z0-9._-]*$/;
 const SNAPSHOT_MODES = new Set(['exact', 'normalize', 'json-equiv']);
+export const MAX_PRODUCER_TIMEOUT_MS = 2_147_483_647;
+
+export function isValidProducerTimeout(timeoutMs: unknown): timeoutMs is number {
+  return Number.isSafeInteger(timeoutMs) &&
+    (timeoutMs as number) > 0 &&
+    (timeoutMs as number) <= MAX_PRODUCER_TIMEOUT_MS;
+}
 
 export function assertValidSnapshotName(name: string): void {
   if (!SNAPSHOT_NAME_PATTERN.test(name)) {
@@ -92,9 +99,8 @@ function validateMetadata(name: string, value: unknown): StoredSnapshotMeta {
   if (meta.command !== undefined && meta.sourceFile !== undefined) {
     throw corruption(name, 'metadata must not define both command and sourceFile');
   }
-  if (meta.producerTimeoutMs !== undefined &&
-      (!Number.isSafeInteger(meta.producerTimeoutMs) || (meta.producerTimeoutMs as number) <= 0)) {
-    throw corruption(name, 'metadata producerTimeoutMs must be a positive integer when present');
+  if (meta.producerTimeoutMs !== undefined && !isValidProducerTimeout(meta.producerTimeoutMs)) {
+    throw corruption(name, `metadata producerTimeoutMs must be an integer from 1 to ${MAX_PRODUCER_TIMEOUT_MS} when present`);
   }
   if (typeof meta.contentHash !== 'string' || !/^-?[0-9a-f]+$/.test(meta.contentHash)) {
     throw corruption(name, 'metadata contentHash must be a hexadecimal string');
@@ -152,6 +158,9 @@ export async function saveSnapshot(
   sourceCwd?: string,
   producerTimeoutMs?: number
 ): Promise<{ snapPath: string; metaPath: string }> {
+  if (producerTimeoutMs !== undefined && !isValidProducerTimeout(producerTimeoutMs)) {
+    throw new Error(`producerTimeoutMs must be an integer from 1 to ${MAX_PRODUCER_TIMEOUT_MS}`);
+  }
   await ensureSnapshotDir(baseDir);
 
   const snapPath = getSnapPath(baseDir, name);
@@ -320,6 +329,9 @@ export async function captureFromCommand(
   cwd?: string,
   timeoutMs: number = 30_000
 ): Promise<string> {
+  if (!isValidProducerTimeout(timeoutMs)) {
+    throw new Error(`Producer timeout must be an integer from 1 to ${MAX_PRODUCER_TIMEOUT_MS} ms`);
+  }
   const { exec } = await import('node:child_process');
   const { promisify } = await import('node:util');
   const execAsync = promisify(exec);
