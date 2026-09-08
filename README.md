@@ -77,10 +77,13 @@ All commands accept `--base-dir <dir>` to select the project root and
 unsupported combinations are usage errors (exit code `2`).
 
 Command-backed `capture`, `verify`, `diff`, and `update` also accept
-`--timeout-ms <positive-integer>`. Producers are terminated after 30,000 ms by
+`--timeout-ms <milliseconds>`, from 1 through 2,147,483,647 (the largest delay
+Node timers safely support). Producers are terminated after 30,000 ms by
 default. A capture records its effective timeout in snapshot metadata; later
 replays use that value unless a new `--timeout-ms` override is supplied. An
-update keeps the recorded timeout unless explicitly overridden.
+update keeps the recorded timeout unless explicitly overridden. Snapshot
+metadata outside the supported range is rejected as corrupted rather than
+passed to Node's timer implementation.
 
 ### `snapdiff capture`
 
