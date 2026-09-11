@@ -14,7 +14,7 @@ export async function handlePrune(args: CliArgs): Promise<void> {
       console.log('No snapshots directory found.');
       return;
     }
-    throw new Error(`Cannot read snapshots directory: ${err instanceof Error ? err.message : String(err)}`);
+    throw new Error(`Cannot read snapshots directory: ${err instanceof Error ? err.message : String(err)}`, { cause: err });
   }
 
   const metaFiles = new Set(entries.filter((e) => e.endsWith('.meta.json')).map((e) => e.replace('.meta.json', '')));
@@ -30,7 +30,7 @@ export async function handlePrune(args: CliArgs): Promise<void> {
     try {
       await deleteSnapshot(name, args.baseDir);
     } catch (err) {
-      throw new Error(`Cannot delete snapshot "${name}": ${err instanceof Error ? err.message : String(err)}`);
+      throw new Error(`Cannot delete snapshot "${name}": ${err instanceof Error ? err.message : String(err)}`, { cause: err });
     }
     console.log(`Pruned incomplete snapshot: ${name}`);
     pruned++;

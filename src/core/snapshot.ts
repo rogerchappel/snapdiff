@@ -300,7 +300,7 @@ export async function listSnapshots(baseDir: string = '.'): Promise<SnapshotInfo
     entries = await fs.readdir(dir);
   } catch (err) {
     if ((err as NodeJS.ErrnoException).code === 'ENOENT') return [];
-    throw new Error(`Cannot read snapshots directory: ${err instanceof Error ? err.message : String(err)}`);
+    throw new Error(`Cannot read snapshots directory: ${err instanceof Error ? err.message : String(err)}`, { cause: err });
   }
 
   const metaNames = new Set(entries.filter((entry) => entry.endsWith('.meta.json')).map((entry) => entry.slice(0, -'.meta.json'.length)));
@@ -349,7 +349,7 @@ export async function captureFromCommand(
     const timeoutContext = details?.killed || details?.signal === 'SIGTERM'
       ? ` timed out after ${timeoutMs} ms`
       : '';
-    throw new Error(`Command failed${exitContext}${timeoutContext}: ${cmd}\n${reason}`);
+    throw new Error(`Command failed${exitContext}${timeoutContext}: ${cmd}\n${reason}`, { cause: err });
   }
 }
 
