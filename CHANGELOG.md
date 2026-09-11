@@ -19,6 +19,9 @@ format and uses semantic versioning when versioned releases are published.
   command. The unscoped npm package belongs to an unrelated project.
 - Publish snapshot content and metadata as a recoverable pair so a failed
   capture or update preserves the previous valid baseline.
+- Raised the supported Node runtime floor to 20 (`engines`, CI matrix):
+  the advisory-fixed test runner requires Node >=20 and Node 18 is
+  end-of-life. Dependabot now also tracks the npm ecosystem.
 
 ### Security
 
@@ -30,6 +33,10 @@ format and uses semantic versioning when versioned releases are published.
   GHSA-5p4m-2wfm-xmqj in the development toolchain.
 - Update the locked `nanoid` dependency to 3.3.18 to address
   GHSA-2v37-7h3g-55p8 in the development toolchain.
+- Update the locked `js-yaml` dependency to 4.3.2 to address
+  GHSA-2883-xcg3-v3hh in the development toolchain.
+- Update the test toolchain to `vitest` 4.1.11 to address
+  GHSA-82fw-gwwq-j7x9 in `@vitest/mocker`.
 
 ## Release Links
 
