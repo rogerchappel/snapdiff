@@ -15,6 +15,15 @@ describe('formatDiff', () => {
     expect(output).toContain('  line3');
   });
 
+  it('falls back to bounded output for large mismatches', () => {
+    const expected = Array.from({ length: 600 }, (_, i) => `old-${i}`).join('\n');
+    const actual = Array.from({ length: 600 }, (_, i) => `new-${i}`).join('\n');
+    const output = formatDiff('large', expected, actual, { color: false });
+    expect(output).toContain('- old-0');
+    expect(output).toContain('+ new-599');
+    expect(output).toContain('diff omitted');
+  });
+
   it('formats with color codes when enabled', () => {
     const output = formatDiff('test', 'a', 'b', { color: true });
     expect(output).toContain('\x1b['); // contains ANSI color codes

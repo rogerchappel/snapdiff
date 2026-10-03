@@ -26,26 +26,30 @@ function computeUnifiedDiff(expected: string, actual: string): string[] {
 
   // Simple LCS-based diff
   const lcs = lcsTable(expectedLines, actualLines);
-  const diff = backtrackLcs(expectedLines, actualLines, lcs);
-
-  return diff;
+  if (lcs.length === 0) {
+    return [
+      ...expectedLines.map((line) => `- ${line}`),
+      ...actualLines.map((line) => `+ ${line}`),
+      '(diff omitted: input exceeds the 250000-cell comparison limit)',
+    ];
+  }
+  return backtrackLcs(expectedLines, actualLines, lcs);
 }
 
 function lcsTable(a: string[], b: string[]): number[][] {
   const m = a.length;
   const n = b.length;
+  const MAX_CELLS = 250_000;
+  if (m * n > MAX_CELLS) return [];
   const table: number[][] = Array.from({ length: m + 1 }, () => Array(n + 1).fill(0));
 
   for (let i = 1; i <= m; i++) {
     for (let j = 1; j <= n; j++) {
-      if (a[i - 1] === b[j - 1]) {
-        table[i][j] = table[i - 1][j - 1] + 1;
-      } else {
-        table[i][j] = Math.max(table[i - 1][j], table[i][j - 1]);
-      }
+      table[i][j] = a[i - 1] === b[j - 1]
+        ? table[i - 1][j - 1] + 1
+        : Math.max(table[i - 1][j], table[i][j - 1]);
     }
   }
-
   return table;
 }
 
