@@ -1,6 +1,6 @@
 # SnapDiff Task List
 
-This document tracks the build tasks for SnapDiff V1.
+This document records the implementation status of SnapDiff V1. Completed items are retained as a project history; active work is tracked in the issue tracker.
 
 ## Project Setup
 
@@ -50,10 +50,6 @@ This document tracks the build tasks for SnapDiff V1.
 - [x] Orchestration manifest (`docs/orchestration.json`)
 - [x] README with personality and quick start
 
-## Verification Checklist
+## Current status
 
-- [ ] `npm install && npm test && npm run check && npm run build && npm run smoke`
-- [ ] `bash scripts/validate.sh` passes
-- [ ] At least one CLI smoke uses fixtures
-- [ ] ~30-50 meaningful atomic commits
-- [ ] Push to main on `rogerchappel/snapdiff`
+The implementation and the verification scripts listed above are complete. Run `npm ci && npm test && npm run check && npm run build && npm run smoke && bash scripts/validate.sh` to verify a checkout. Release, publication, and commit-count targets are intentionally not tracked as product tasks here; consult the repository workflow and issue tracker for current operational work.
