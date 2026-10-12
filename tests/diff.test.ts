@@ -19,9 +19,10 @@ describe('formatDiff', () => {
     const expected = Array.from({ length: 600 }, (_, i) => `old-${i}`).join('\n');
     const actual = Array.from({ length: 600 }, (_, i) => `new-${i}`).join('\n');
     const output = formatDiff('large', expected, actual, { color: false });
-    expect(output).toContain('- old-0');
-    expect(output).toContain('+ new-599');
     expect(output).toContain('diff omitted');
+    expect(output).not.toContain('- old-0');
+    expect(output).not.toContain('+ new-599');
+    expect(output.length).toBeLessThan(200);
   });
 
   it('formats with color codes when enabled', () => {

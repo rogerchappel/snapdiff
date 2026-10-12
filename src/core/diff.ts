@@ -24,15 +24,13 @@ function computeUnifiedDiff(expected: string, actual: string): string[] {
   const expectedLines = expected.split('\n');
   const actualLines = actual.split('\n');
 
+  // Avoid materializing a potentially enormous diff when the LCS table is too large.
+  if (expectedLines.length * actualLines.length > 250_000) {
+    return ['(diff omitted: input exceeds the 250000-cell comparison limit)'];
+  }
+
   // Simple LCS-based diff
   const lcs = lcsTable(expectedLines, actualLines);
-  if (lcs.length === 0) {
-    return [
-      ...expectedLines.map((line) => `- ${line}`),
-      ...actualLines.map((line) => `+ ${line}`),
-      '(diff omitted: input exceeds the 250000-cell comparison limit)',
-    ];
-  }
   return backtrackLcs(expectedLines, actualLines, lcs);
 }
 
